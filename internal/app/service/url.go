@@ -5,10 +5,11 @@ type URL struct {
 	short    string
 }
 
-func NewUrl(original, short string) *URL {
+func NewURL(original, short string) *URL {
 	return &URL{original: original,
 		short: short,
 	}
+
 }
 
 func (u *URL) GetOriginal() string {

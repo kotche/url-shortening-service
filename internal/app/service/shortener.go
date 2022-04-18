@@ -7,8 +7,8 @@ import (
 
 const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func MakeShortURl() string {
-	b := make([]byte, config.ShortUrlLen)
+func MakeShortURL() string {
+	b := make([]byte, config.ShortURLLen)
 	for i := range b {
 		b[i] = symbols[rand.Intn(len(symbols))]
 	}

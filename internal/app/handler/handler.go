@@ -46,20 +46,20 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	originUrl := string(urlRead)
+	originURL := string(urlRead)
 
 	for {
-		shortUrl := service.MakeShortURl()
-		urlModel, _ := h.st.GetById(shortUrl)
+		shortURL := service.MakeShortURL()
+		urlModel, _ := h.st.GetByID(shortURL)
 
 		if urlModel == nil {
-			urlModel = service.NewUrl(originUrl, shortUrl)
+			urlModel = service.NewURL(originURL, shortURL)
 			h.st.Add(urlModel)
-		} else if urlModel != nil && urlModel.GetOriginal() != originUrl {
+		} else if urlModel.GetOriginal() != originURL {
 			continue
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(config.ServerAddrForUrl + urlModel.GetShort()))
+		w.Write([]byte(config.ServerAddrForURL + urlModel.GetShort()))
 		break
 	}
 }
@@ -70,7 +70,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 	if len(urlParts) == 2 && urlParts[1] != "" {
 
-		url, err := h.st.GetById(urlParts[1])
+		url, err := h.st.GetByID(urlParts[1])
 		if err != nil {
 			w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusBadRequest)

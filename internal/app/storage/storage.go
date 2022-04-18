@@ -7,7 +7,7 @@ import (
 
 type Storage interface {
 	Add(url *service.URL)
-	GetById(id string) (*service.URL, error)
+	GetByID(id string) (*service.URL, error)
 }
 
 var _ Storage = (*UrlsStorage)(nil)
@@ -26,7 +26,7 @@ func (m *UrlsStorage) Add(url *service.URL) {
 	m.urls[url.GetShort()] = url
 }
 
-func (m *UrlsStorage) GetById(id string) (*service.URL, error) {
+func (m *UrlsStorage) GetByID(id string) (*service.URL, error) {
 
 	original, ok := m.urls[id]
 	if !ok {

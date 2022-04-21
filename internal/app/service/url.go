@@ -19,3 +19,7 @@ func (u *URL) GetOriginal() string {
 func (u *URL) GetShort() string {
 	return u.short
 }
+
+func (u *URL) SetShort(short string) {
+	u.short = short
+}

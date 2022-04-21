@@ -75,7 +75,4 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", url.GetOriginal())
 	w.WriteHeader(http.StatusTemporaryRedirect)
-	return
-
-	w.WriteHeader(http.StatusBadRequest)
 }

@@ -65,9 +65,9 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
-	shortUrl := chi.URLParam(r, "id")
+	shortURL := chi.URLParam(r, "id")
 
-	url, err := h.st.GetByID(shortUrl)
+	url, err := h.st.GetByID(shortURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))

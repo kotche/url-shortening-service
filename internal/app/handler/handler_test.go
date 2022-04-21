@@ -54,18 +54,6 @@ func TestHandler_handleGet(t *testing.T) {
 				body:     "key not found",
 			},
 		},
-		{
-			name: "url empty",
-			fields: fields{
-				short:    "",
-				original: "",
-			},
-			want: want{
-				code:     http.StatusBadRequest,
-				location: "",
-				body:     "",
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -77,14 +65,13 @@ func TestHandler_handleGet(t *testing.T) {
 				urls.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := &Handler{
-				st: urls,
-			}
+			h := NewHandler(urls)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
 
-			h.handleGet(w, r)
+			h.GetRouter().ServeHTTP(w, r)
+
 			response := w.Result()
 
 			assert.Equal(t, tt.want.code, response.StatusCode)
@@ -145,14 +132,14 @@ func TestHandler_handlePost(t *testing.T) {
 
 			var urls storage.Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
-			h := &Handler{
-				st: urls,
-			}
+			h := NewHandler(urls)
 
 			body := bytes.NewBufferString(tt.fields.original)
 
 			r := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
+
+			h.GetRouter().ServeHTTP(w, r)
 
 			h.handlePost(w, r)
 			response := w.Result()

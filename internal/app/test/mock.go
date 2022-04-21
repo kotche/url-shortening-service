@@ -1,7 +1,6 @@
 package test
 
 import (
-	"fmt"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 )
 
@@ -11,11 +10,10 @@ type Mock struct {
 	err      bool
 }
 
-func NewMock(original, short string, err bool) *Mock {
+func NewMock(original, short string) *Mock {
 	return &Mock{
 		original: original,
 		short:    short,
-		err:      err,
 	}
 }
 
@@ -24,10 +22,5 @@ func (m *Mock) Add(url *service.URL) {
 }
 
 func (m *Mock) GetByID(id string) (*service.URL, error) {
-
-	if m.err {
-		return nil, fmt.Errorf("key not found")
-	}
-
 	return nil, nil
 }

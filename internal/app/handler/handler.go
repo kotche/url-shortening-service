@@ -50,12 +50,7 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		shortURL := service.MakeShortURL()
-		urlModel, err := h.st.GetByID(shortURL)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
-			return
-		}
+		urlModel, _ := h.st.GetByID(shortURL)
 
 		if urlModel == nil {
 			urlModel = service.NewURL(originURL, shortURL)

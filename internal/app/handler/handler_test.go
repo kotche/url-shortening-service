@@ -109,7 +109,6 @@ func TestHandler_handlePost(t *testing.T) {
 	type fields struct {
 		original string
 		short    string
-		err      bool
 	}
 
 	tests := []struct {
@@ -122,7 +121,6 @@ func TestHandler_handlePost(t *testing.T) {
 			fields: fields{
 				original: "www.yandex.ru",
 				short:    "qwertyT",
-				err:      false,
 			},
 			want: want{
 				code: http.StatusCreated,
@@ -134,23 +132,10 @@ func TestHandler_handlePost(t *testing.T) {
 			fields: fields{
 				original: "",
 				short:    "qwertyT",
-				err:      false,
 			},
 			want: want{
 				code: http.StatusBadRequest,
 				body: "",
-			},
-		},
-		{
-			name: "search key error",
-			fields: fields{
-				original: "www.yandex.ru",
-				short:    "qwertyT",
-				err:      true,
-			},
-			want: want{
-				code: http.StatusBadRequest,
-				body: "key not found",
 			},
 		},
 	}
@@ -158,7 +143,7 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var urls storage.Storage = test.NewMock(tt.fields.original, tt.fields.short, tt.fields.err)
+			var urls storage.Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
 			h := &Handler{
 				st: urls,

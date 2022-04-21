@@ -25,7 +25,7 @@ func (h *Handler) Handlers() http.HandlerFunc {
 		case http.MethodGet:
 			h.handleGet(w, r)
 		default:
-			w.WriteHeader(400)
+			w.WriteHeader(http.StatusBadRequest)
 		}
 	}
 }
@@ -39,9 +39,9 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer r.Body.Close()
 	urlRead, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.Write([]byte(err.Error()))
+	if err != nil || len(urlRead) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -50,7 +50,12 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	for {
 		shortURL := service.MakeShortURL()
-		urlModel, _ := h.st.GetByID(shortURL)
+		urlModel, err := h.st.GetByID(shortURL)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
 
 		if urlModel == nil {
 			urlModel = service.NewURL(originURL, shortURL)
@@ -72,8 +77,8 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 		url, err := h.st.GetByID(urlParts[1])
 		if err != nil {
-			w.Write([]byte(err.Error()))
 			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
 			return
 		}
 		w.Header().Set("Location", url.GetOriginal())

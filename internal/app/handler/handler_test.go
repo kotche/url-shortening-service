@@ -8,7 +8,7 @@ import (
 
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
-	"github.com/kotche/url-shortening-service/internal/app/test"
+	"github.com/kotche/url-shortening-service/internal/app/storage/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

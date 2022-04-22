@@ -2,6 +2,7 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/kotche/url-shortening-service/internal/app/service"
 )
 

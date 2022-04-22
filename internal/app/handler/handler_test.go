@@ -2,14 +2,15 @@ package handler
 
 import (
 	"bytes"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/test"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"net/http"
-	"net/http/httptest"
-	"testing"
 )
 
 func TestHandler_handleGet(t *testing.T) {
@@ -59,13 +60,13 @@ func TestHandler_handleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var urls storage.Storage = storage.NewUrls()
+			var UrlStorage storage.Storage = storage.NewUrls()
 
 			if tt.fields.original != "" {
-				urls.Add(service.NewURL(tt.fields.original, tt.fields.short))
+				UrlStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := NewHandler(urls)
+			h := NewHandler(UrlStorage)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
@@ -130,9 +131,9 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var urls storage.Storage = test.NewMock(tt.fields.original, tt.fields.short)
+			var UrlStorage storage.Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
-			h := NewHandler(urls)
+			h := NewHandler(UrlStorage)
 
 			body := bytes.NewBufferString(tt.fields.original)
 

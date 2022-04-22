@@ -1,8 +1,9 @@
 package service
 
 import (
-	"github.com/kotche/url-shortening-service/internal/config"
 	"math/rand"
+
+	"github.com/kotche/url-shortening-service/internal/config"
 )
 
 const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"

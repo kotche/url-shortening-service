@@ -1,13 +1,14 @@
 package handler
 
 import (
+	"io"
+	"net/http"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/config"
-	"io"
-	"net/http"
 )
 
 type Handler struct {

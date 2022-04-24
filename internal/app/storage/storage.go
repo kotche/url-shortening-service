@@ -6,21 +6,21 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/service"
 )
 
-type urlsStorage struct {
+type URLStorage struct {
 	urls map[string]*service.URL
 }
 
-func NewUrls() *urlsStorage {
-	return &urlsStorage{
+func NewUrls() *URLStorage {
+	return &URLStorage{
 		urls: make(map[string]*service.URL),
 	}
 }
 
-func (m *urlsStorage) Add(url *service.URL) {
+func (m *URLStorage) Add(url *service.URL) {
 	m.urls[url.GetShort()] = url
 }
 
-func (m *urlsStorage) GetByID(id string) (*service.URL, error) {
+func (m *URLStorage) GetByID(id string) (*service.URL, error) {
 
 	original, ok := m.urls[id]
 	if !ok {

@@ -2,31 +2,25 @@ package storage
 
 import (
 	"fmt"
+
 	"github.com/kotche/url-shortening-service/internal/app/service"
 )
 
-type Storage interface {
-	Add(url *service.URL)
-	GetByID(id string) (*service.URL, error)
-}
-
-var _ Storage = (*UrlsStorage)(nil)
-
-type UrlsStorage struct {
+type URLStorage struct {
 	urls map[string]*service.URL
 }
 
-func NewUrls() *UrlsStorage {
-	return &UrlsStorage{
+func NewUrls() *URLStorage {
+	return &URLStorage{
 		urls: make(map[string]*service.URL),
 	}
 }
 
-func (m *UrlsStorage) Add(url *service.URL) {
+func (m *URLStorage) Add(url *service.URL) {
 	m.urls[url.GetShort()] = url
 }
 
-func (m *UrlsStorage) GetByID(id string) (*service.URL, error) {
+func (m *URLStorage) GetByID(id string) (*service.URL, error) {
 
 	original, ok := m.urls[id]
 	if !ok {

@@ -1,20 +1,18 @@
 package main
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/kotche/url-shortening-service/internal/app/handler"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/config"
-	"log"
-	"net/http"
 )
 
 func main() {
 
-	var urls storage.Storage = storage.NewUrls()
-	handler := handler.NewHandler(urls)
+	var URLStorage handler.Storage = storage.NewUrls()
+	handler := handler.NewHandler(URLStorage)
 
-	mux := http.NewServeMux()
-	mux.Handle("/", handler.Handlers())
-
-	log.Fatal(http.ListenAndServe(config.ServerAddr, mux))
+	log.Fatal(http.ListenAndServe(config.ServerAddr, handler.GetRouter()))
 }

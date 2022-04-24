@@ -11,8 +11,8 @@ import (
 
 func main() {
 
-	var UrlStorage handler.Storage = storage.NewUrls()
-	handler := handler.NewHandler(UrlStorage)
+	var URLStorage handler.Storage = storage.NewUrls()
+	handler := handler.NewHandler(URLStorage)
 
 	log.Fatal(http.ListenAndServe(config.ServerAddr, handler.GetRouter()))
 }

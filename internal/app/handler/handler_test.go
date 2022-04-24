@@ -60,7 +60,7 @@ func TestHandler_handleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var UrlStorage storage.Storage = storage.NewUrls()
+			var UrlStorage Storage = storage.NewUrls()
 
 			if tt.fields.original != "" {
 				UrlStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
@@ -131,7 +131,7 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var UrlStorage storage.Storage = test.NewMock(tt.fields.original, tt.fields.short)
+			var UrlStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
 			h := NewHandler(UrlStorage)
 

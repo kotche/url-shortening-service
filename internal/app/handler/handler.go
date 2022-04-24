@@ -7,16 +7,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kotche/url-shortening-service/internal/app/service"
-	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
 
+type Storage interface {
+	Add(url *service.URL)
+	GetByID(id string) (*service.URL, error)
+}
+
 type Handler struct {
-	st     storage.Storage
+	st     Storage
 	router *chi.Mux
 }
 
-func NewHandler(st storage.Storage) *Handler {
+func NewHandler(st Storage) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 

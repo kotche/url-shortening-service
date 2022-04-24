@@ -60,13 +60,13 @@ func TestHandler_handleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var UrlStorage Storage = storage.NewUrls()
+			var URLStorage Storage = storage.NewUrls()
 
 			if tt.fields.original != "" {
-				UrlStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
+				URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := NewHandler(UrlStorage)
+			h := NewHandler(URLStorage)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
@@ -131,9 +131,9 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var UrlStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
+			var URLStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
-			h := NewHandler(UrlStorage)
+			h := NewHandler(URLStorage)
 
 			body := bytes.NewBufferString(tt.fields.original)
 

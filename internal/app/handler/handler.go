@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 
@@ -20,6 +21,10 @@ type Handler struct {
 	router *chi.Mux
 }
 
+func (h *Handler) GetRouter() *chi.Mux {
+	return h.router
+}
+
 func NewHandler(st Storage) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
@@ -37,10 +42,7 @@ func NewHandler(st Storage) *Handler {
 func (h *Handler) setRouting() {
 	h.router.Get("/{id}", h.handleGet)
 	h.router.Post("/", h.handlePost)
-}
-
-func (h *Handler) GetRouter() *chi.Mux {
-	return h.router
+	h.router.Post("/api/shorten", h.handlePostJSON)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +67,59 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(config.ServerAddrForURL + urlModel.GetShort()))
+		break
+	}
+}
+
+func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
+
+	if r.Header.Get("Content-Type") != "application/json" {
+		http.Error(w, "Invalid content type", http.StatusBadRequest)
+		return
+	}
+
+	originURLReceiver := &struct {
+		OriginURL string `json:"url"`
+	}{}
+
+	err := json.NewDecoder(r.Body).Decode(originURLReceiver)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	originURL := originURLReceiver.OriginURL
+
+	if originURL == "" {
+		http.Error(w, "URL is empty", http.StatusBadRequest)
+		return
+	}
+
+	for {
+		shortURL := service.MakeShortURL()
+		urlModel, _ := h.st.GetByID(shortURL)
+
+		if urlModel == nil {
+			urlModel = service.NewURL(originURL, shortURL)
+			h.st.Add(urlModel)
+		} else if urlModel.GetOriginal() != originURL {
+			continue
+		}
+
+		shortURLSender := &struct {
+			ShortURL string `json:"result"`
+		}{
+			ShortURL: config.ServerAddrForURL + urlModel.GetShort(),
+		}
+
+		response, err := json.Marshal(shortURLSender)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write(response)
 		break
 	}
 }

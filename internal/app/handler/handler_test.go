@@ -10,6 +10,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
+	"github.com/kotche/url-shortening-service/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -67,7 +68,8 @@ func TestHandler_handleGet(t *testing.T) {
 				URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := NewHandler(URLStorage)
+			conf := config.NewConfig()
+			h := NewHandler(URLStorage, conf)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
@@ -134,7 +136,8 @@ func TestHandler_handlePost(t *testing.T) {
 
 			var URLStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
-			h := NewHandler(URLStorage)
+			conf := config.NewConfig()
+			h := NewHandler(URLStorage, conf)
 
 			body := bytes.NewBufferString(tt.fields.original)
 
@@ -237,7 +240,8 @@ func TestHandler_handlePostJSON(t *testing.T) {
 
 			var URLStorage Storage = test.NewMock(tt.fields.originURL, tt.fields.shortURL)
 
-			h := NewHandler(URLStorage)
+			conf := config.NewConfig()
+			h := NewHandler(URLStorage, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 

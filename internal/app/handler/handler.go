@@ -19,19 +19,21 @@ type Storage interface {
 type Handler struct {
 	st     Storage
 	router *chi.Mux
+	conf   *config.Config
 }
 
 func (h *Handler) GetRouter() *chi.Mux {
 	return h.router
 }
 
-func NewHandler(st Storage) *Handler {
+func NewHandler(st Storage, conf *config.Config) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 
 	handler := &Handler{
 		st:     st,
 		router: router,
+		conf:   conf,
 	}
 
 	handler.setRouting()
@@ -66,7 +68,7 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(config.ServerAddrForURL + urlModel.GetShort()))
+		w.Write([]byte(h.conf.GetBaseURL() + "/" + urlModel.GetShort()))
 		break
 	}
 }
@@ -109,7 +111,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		shortURLSender := &struct {
 			ShortURL string `json:"result"`
 		}{
-			ShortURL: config.ServerAddrForURL + urlModel.GetShort(),
+			ShortURL: h.conf.GetBaseURL() + "/" + urlModel.GetShort(),
 		}
 
 		response, err := json.Marshal(shortURLSender)

@@ -14,7 +14,7 @@ type Config struct {
 func NewConfig() *Config {
 	return &Config{
 		serverAddr: getEnvValue("SERVER_ADDRESS", "localhost:8080"),
-		baseURL:    getEnvValue("BASE_URL", "http://localhost:8080/"),
+		baseURL:    getEnvValue("BASE_URL", "http://localhost:8080"),
 	}
 }
 

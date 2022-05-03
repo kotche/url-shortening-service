@@ -68,7 +68,7 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(h.conf.GetBaseURL() + urlModel.GetShort()))
+		w.Write([]byte(h.conf.GetBaseURL() + "/" + urlModel.GetShort()))
 		break
 	}
 }
@@ -111,7 +111,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		shortURLSender := &struct {
 			ShortURL string `json:"result"`
 		}{
-			ShortURL: h.conf.GetBaseURL() + urlModel.GetShort(),
+			ShortURL: h.conf.GetBaseURL() + "/" + urlModel.GetShort(),
 		}
 
 		response, err := json.Marshal(shortURLSender)

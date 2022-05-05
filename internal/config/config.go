@@ -1,34 +1,21 @@
 package config
 
-import (
-	"os"
-)
+import "github.com/caarlos0/env/v6"
 
 const ShortURLLen = 7
 
 type Config struct {
-	serverAddr string
-	baseURL    string
+	ServerAddr string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
+	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`
+	FilePath   string `env:"FILE_STORAGE_PATH"`
 }
 
-func NewConfig() *Config {
-	return &Config{
-		serverAddr: getEnvValue("SERVER_ADDRESS", "localhost:8080"),
-		baseURL:    getEnvValue("BASE_URL", "http://localhost:8080"),
+func NewConfig() (*Config, error) {
+	conf := &Config{}
+	err := env.Parse(conf)
+
+	if err != nil {
+		return nil, err
 	}
-}
-
-func (c *Config) GetServerAddr() string {
-	return c.serverAddr
-}
-
-func (c *Config) GetBaseURL() string {
-	return c.baseURL
-}
-
-func getEnvValue(key string, defaultVal string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-	return defaultVal
+	return conf, nil
 }

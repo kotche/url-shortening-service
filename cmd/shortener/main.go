@@ -10,10 +10,26 @@ import (
 )
 
 func main() {
+	conf, err := config.NewConfig()
+	if err != nil {
+		log.Fatal(err.Error())
+		return
+	}
 
-	conf := config.NewConfig()
-	var URLStorage handler.Storage = storage.NewUrls()
+	var URLStorage handler.Storage
+
+	if conf.FilePath == "" {
+		URLStorage = storage.NewUrls()
+	} else {
+		URLStorage, err = storage.NewFileStorage(conf.FilePath)
+		if err != nil {
+			log.Fatal(err.Error())
+			return
+		}
+		defer URLStorage.Close()
+	}
+
 	handler := handler.NewHandler(URLStorage, conf)
 
-	log.Fatal(http.ListenAndServe(conf.GetServerAddr(), handler.GetRouter()))
+	log.Fatal(http.ListenAndServe(conf.ServerAddr, handler.GetRouter()))
 }

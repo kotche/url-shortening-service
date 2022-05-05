@@ -12,8 +12,9 @@ import (
 )
 
 type Storage interface {
-	Add(url *service.URL)
+	Add(url *service.URL) error
 	GetByID(id string) (*service.URL, error)
+	Close() error
 }
 
 type Handler struct {
@@ -63,18 +64,21 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 		if urlModel == nil {
 			urlModel = service.NewURL(originURL, shortURL)
-			h.st.Add(urlModel)
-		} else if urlModel.GetOriginal() != originURL {
+			err := h.st.Add(urlModel)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		} else if urlModel.Origin != originURL {
 			continue
 		}
 		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(h.conf.GetBaseURL() + "/" + urlModel.GetShort()))
+		w.Write([]byte(h.conf.BaseURL + "/" + urlModel.Short))
 		break
 	}
 }
 
 func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
-
 	if r.Header.Get("Content-Type") != "application/json" {
 		http.Error(w, "Invalid content type", http.StatusBadRequest)
 		return
@@ -103,15 +107,19 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 		if urlModel == nil {
 			urlModel = service.NewURL(originURL, shortURL)
-			h.st.Add(urlModel)
-		} else if urlModel.GetOriginal() != originURL {
+			err := h.st.Add(urlModel)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		} else if urlModel.Origin != originURL {
 			continue
 		}
 
 		shortURLSender := &struct {
 			ShortURL string `json:"result"`
 		}{
-			ShortURL: h.conf.GetBaseURL() + "/" + urlModel.GetShort(),
+			ShortURL: h.conf.BaseURL + "/" + urlModel.Short,
 		}
 
 		response, err := json.Marshal(shortURLSender)
@@ -135,6 +143,6 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(err.Error()))
 		return
 	}
-	w.Header().Set("Location", url.GetOriginal())
+	w.Header().Set("Location", url.Origin)
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }

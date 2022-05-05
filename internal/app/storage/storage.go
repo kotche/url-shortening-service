@@ -16,8 +16,9 @@ func NewUrls() *URLStorage {
 	}
 }
 
-func (m *URLStorage) Add(url *service.URL) {
-	m.urls[url.GetShort()] = url
+func (m *URLStorage) Add(url *service.URL) error {
+	m.urls[url.Short] = url
+	return nil
 }
 
 func (m *URLStorage) GetByID(id string) (*service.URL, error) {
@@ -28,4 +29,8 @@ func (m *URLStorage) GetByID(id string) (*service.URL, error) {
 	}
 
 	return original, nil
+}
+
+func (m *URLStorage) Close() error {
+	return nil
 }

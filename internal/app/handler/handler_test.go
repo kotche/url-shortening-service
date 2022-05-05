@@ -68,7 +68,7 @@ func TestHandler_handleGet(t *testing.T) {
 				URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			conf := config.NewConfig()
+			conf, _ := config.NewConfig()
 			h := NewHandler(URLStorage, conf)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
@@ -136,7 +136,7 @@ func TestHandler_handlePost(t *testing.T) {
 
 			var URLStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
 
-			conf := config.NewConfig()
+			conf, _ := config.NewConfig()
 			h := NewHandler(URLStorage, conf)
 
 			body := bytes.NewBufferString(tt.fields.original)
@@ -240,7 +240,7 @@ func TestHandler_handlePostJSON(t *testing.T) {
 
 			var URLStorage Storage = test.NewMock(tt.fields.originURL, tt.fields.shortURL)
 
-			conf := config.NewConfig()
+			conf, _ := config.NewConfig()
 			h := NewHandler(URLStorage, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)

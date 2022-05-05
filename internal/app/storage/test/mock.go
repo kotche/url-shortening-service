@@ -17,10 +17,15 @@ func NewMock(original, short string) *Mock {
 	}
 }
 
-func (m *Mock) Add(url *service.URL) {
-	url.SetShort(m.short)
+func (m *Mock) Add(url *service.URL) error {
+	url.Short = m.short
+	return nil
 }
 
 func (m *Mock) GetByID(id string) (*service.URL, error) {
 	return nil, nil
+}
+
+func (m *Mock) Close() error {
+	return nil
 }

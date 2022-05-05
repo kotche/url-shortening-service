@@ -22,11 +22,11 @@ func main() {
 		URLStorage = storage.NewUrls()
 	} else {
 		URLStorage, err = storage.NewFileStorage(conf.FilePath)
-		defer URLStorage.Close()
 		if err != nil {
 			log.Fatal(err.Error())
 			return
 		}
+		defer URLStorage.Close()
 	}
 
 	handler := handler.NewHandler(URLStorage, conf)

@@ -1,6 +1,10 @@
 package config
 
-import "github.com/caarlos0/env/v6"
+import (
+	"flag"
+
+	"github.com/caarlos0/env/v6"
+)
 
 const ShortURLLen = 7
 
@@ -12,10 +16,21 @@ type Config struct {
 
 func NewConfig() (*Config, error) {
 	conf := &Config{}
-	err := env.Parse(conf)
 
-	if err != nil {
+	if err := env.Parse(conf); err != nil {
 		return nil, err
 	}
+
+	regStringVar(&conf.ServerAddr, "a", conf.ServerAddr, "server address")
+	regStringVar(&conf.BaseURL, "b", conf.BaseURL, "base url")
+	regStringVar(&conf.FilePath, "f", conf.FilePath, "file storage path")
+	flag.Parse()
+
 	return conf, nil
+}
+
+func regStringVar(p *string, name string, value string, usage string) {
+	if flag.Lookup(name) == nil {
+		flag.StringVar(p, name, value, usage)
+	}
 }

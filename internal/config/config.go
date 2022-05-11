@@ -7,6 +7,7 @@ import (
 )
 
 const ShortURLLen = 7
+const Compression = "gzip"
 
 type Config struct {
 	ServerAddr string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`

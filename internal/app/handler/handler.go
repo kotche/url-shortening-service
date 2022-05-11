@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
@@ -30,6 +31,7 @@ func (h *Handler) GetRouter() *chi.Mux {
 func NewHandler(st Storage, conf *config.Config) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
+	router.Use(middlewares.GzipHandle)
 
 	handler := &Handler{
 		st:     st,

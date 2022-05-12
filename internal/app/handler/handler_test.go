@@ -65,13 +65,15 @@ func TestHandler_handleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = storage.NewUrls()
+			URLStorage := storage.NewUrls()
 
 			if tt.fields.original != "" {
 				_ = URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := NewHandler(URLStorage, conf)
+			service := service.NewService(URLStorage)
+
+			h := NewHandler(service, conf)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
@@ -138,9 +140,10 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
+			mock := test.NewMock(tt.fields.original, tt.fields.short)
+			service := service.NewService(mock)
 
-			h := NewHandler(URLStorage, conf)
+			h := NewHandler(service, conf)
 
 			body := bytes.NewBufferString(tt.fields.original)
 
@@ -243,9 +246,10 @@ func TestHandler_handlePostJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = test.NewMock(tt.fields.originURL, tt.fields.shortURL)
+			mock := test.NewMock(tt.fields.originURL, tt.fields.shortURL)
 
-			h := NewHandler(URLStorage, conf)
+			service := service.NewService(mock)
+			h := NewHandler(service, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -349,8 +353,9 @@ func TestGzipHandle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = test.NewMock("https://www.yandex.com", "qwertyT")
-			h := NewHandler(URLStorage, conf)
+			mock := test.NewMock("https://www.yandex.com", "qwertyT")
+			service := service.NewService(mock)
+			h := NewHandler(service, conf)
 
 			data := []byte(`{"url":"https://www.google.com"}`)
 

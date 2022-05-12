@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"compress/gzip"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -64,13 +65,15 @@ func TestHandler_handleGet(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = storage.NewUrls()
+			URLStorage := storage.NewUrls()
 
 			if tt.fields.original != "" {
 				_ = URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
-			h := NewHandler(URLStorage, conf)
+			service := service.NewService(URLStorage)
+
+			h := NewHandler(service, conf)
 
 			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
 			w := httptest.NewRecorder()
@@ -137,9 +140,10 @@ func TestHandler_handlePost(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = test.NewMock(tt.fields.original, tt.fields.short)
+			mock := test.NewMock(tt.fields.original, tt.fields.short)
+			service := service.NewService(mock)
 
-			h := NewHandler(URLStorage, conf)
+			h := NewHandler(service, conf)
 
 			body := bytes.NewBufferString(tt.fields.original)
 
@@ -242,9 +246,10 @@ func TestHandler_handlePostJSON(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			var URLStorage Storage = test.NewMock(tt.fields.originURL, tt.fields.shortURL)
+			mock := test.NewMock(tt.fields.originURL, tt.fields.shortURL)
 
-			h := NewHandler(URLStorage, conf)
+			service := service.NewService(mock)
+			h := NewHandler(service, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -260,6 +265,133 @@ func TestHandler_handlePostJSON(t *testing.T) {
 
 			if tt.fields.compareBody {
 				assert.Equal(t, tt.want.body, strings.Trim(w.Body.String(), "\n"))
+			}
+
+			err := response.Body.Close()
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestGzipHandle(t *testing.T) {
+
+	conf, _ := config.NewConfig()
+
+	type want struct {
+		code int
+	}
+
+	type header struct {
+		name  string
+		value string
+	}
+
+	type fields struct {
+		compressRequest    bool
+		decompressResponse bool
+		headers            []header
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   want
+	}{
+		{
+			name: "compress/decompress ok",
+			fields: fields{
+				compressRequest:    true,
+				decompressResponse: true,
+				headers: []header{
+					{name: "Content-Encoding", value: "gzip"},
+					{name: "Accept-Encoding", value: "gzip"},
+				},
+			},
+			want: want{
+				code: http.StatusCreated,
+			},
+		},
+		{
+			name: "no compress",
+			fields: fields{
+				compressRequest:    false,
+				decompressResponse: false,
+				headers:            []header{},
+			},
+			want: want{
+				code: http.StatusCreated,
+			},
+		},
+		{
+			name: "bad compress header",
+			fields: fields{
+				compressRequest:    true,
+				decompressResponse: false,
+				headers: []header{
+					{name: "Content-Encoding", value: "test"},
+				},
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "bad compress body request",
+			fields: fields{
+				compressRequest:    false,
+				decompressResponse: false,
+				headers: []header{
+					{name: "Content-Encoding", value: "gzip"},
+				},
+			},
+			want: want{
+				code: http.StatusInternalServerError,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			mock := test.NewMock("https://www.yandex.com", "qwertyT")
+			service := service.NewService(mock)
+			h := NewHandler(service, conf)
+
+			data := []byte(`{"url":"https://www.google.com"}`)
+
+			var body bytes.Buffer
+
+			if tt.fields.compressRequest {
+				writer, _ := gzip.NewWriterLevel(&body, gzip.BestSpeed)
+				writer.Write(data)
+				writer.Close()
+			} else {
+				body = *bytes.NewBuffer(data)
+			}
+
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten", &body)
+			r.Header.Set("Content-Type", "application/json")
+
+			for _, v := range tt.fields.headers {
+				r.Header.Set(v.name, v.value)
+			}
+
+			w := httptest.NewRecorder()
+			h.GetRouter().ServeHTTP(w, r)
+			response := w.Result()
+
+			assert.Equal(t, tt.want.code, response.StatusCode)
+
+			if tt.fields.decompressResponse {
+				reader, _ := gzip.NewReader(bytes.NewReader(w.Body.Bytes()))
+				defer reader.Close()
+				var b bytes.Buffer
+				b.ReadFrom(reader)
+				bodyResponse := b.Bytes()
+
+				if !strings.Contains(string(bodyResponse), "qwertyT") {
+					t.Error("response body does not match")
+				}
 			}
 
 			err := response.Body.Close()

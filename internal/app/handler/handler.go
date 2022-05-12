@@ -7,34 +7,30 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
 
-type Storage interface {
-	Add(url *service.URL) error
-	GetByID(id string) (*service.URL, error)
-	Close() error
-}
-
 type Handler struct {
-	st     Storage
-	router *chi.Mux
-	conf   *config.Config
+	service *service.Service
+	router  *chi.Mux
+	conf    *config.Config
 }
 
 func (h *Handler) GetRouter() *chi.Mux {
 	return h.router
 }
 
-func NewHandler(st Storage, conf *config.Config) *Handler {
+func NewHandler(service *service.Service, conf *config.Config) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
+	router.Use(middlewares.GzipHandle)
 
 	handler := &Handler{
-		st:     st,
-		router: router,
-		conf:   conf,
+		service: service,
+		router:  router,
+		conf:    conf,
 	}
 
 	handler.setRouting()
@@ -58,24 +54,14 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	originURL := string(urlRead)
 
-	for {
-		shortURL := service.MakeShortURL()
-		urlModel, _ := h.st.GetByID(shortURL)
-
-		if urlModel == nil {
-			urlModel = service.NewURL(originURL, shortURL)
-			err := h.st.Add(urlModel)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		} else if urlModel.Origin != originURL {
-			continue
-		}
-		w.WriteHeader(http.StatusCreated)
-		w.Write([]byte(h.conf.BaseURL + "/" + urlModel.Short))
-		break
+	urlModel, err := h.service.GetURLModel(originURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte(h.conf.BaseURL + "/" + urlModel.Short))
 }
 
 func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
@@ -101,43 +87,32 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for {
-		shortURL := service.MakeShortURL()
-		urlModel, _ := h.st.GetByID(shortURL)
-
-		if urlModel == nil {
-			urlModel = service.NewURL(originURL, shortURL)
-			err := h.st.Add(urlModel)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-		} else if urlModel.Origin != originURL {
-			continue
-		}
-
-		shortURLSender := &struct {
-			ShortURL string `json:"result"`
-		}{
-			ShortURL: h.conf.BaseURL + "/" + urlModel.Short,
-		}
-
-		response, err := json.Marshal(shortURLSender)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		w.Write(response)
-		break
+	urlModel, err := h.service.GetURLModel(originURL)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
+
+	shortURLSender := &struct {
+		ShortURL string `json:"result"`
+	}{
+		ShortURL: h.conf.BaseURL + "/" + urlModel.Short,
+	}
+
+	response, err := json.Marshal(shortURLSender)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(response)
 }
 
 func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
-	url, err := h.st.GetByID(shortURL)
+	url, err := h.service.GetURLModelByID(shortURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))

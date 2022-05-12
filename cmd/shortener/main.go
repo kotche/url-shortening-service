@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/kotche/url-shortening-service/internal/app/handler"
+	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
@@ -16,7 +17,7 @@ func main() {
 		return
 	}
 
-	var URLStorage handler.Storage
+	var URLStorage service.Storage
 
 	if conf.FilePath == "" {
 		URLStorage = storage.NewUrls()
@@ -29,7 +30,8 @@ func main() {
 		defer URLStorage.Close()
 	}
 
-	handler := handler.NewHandler(URLStorage, conf)
+	service := service.NewService(URLStorage)
+	handler := handler.NewHandler(service, conf)
 
 	log.Fatal(http.ListenAndServe(conf.ServerAddr, handler.GetRouter()))
 }

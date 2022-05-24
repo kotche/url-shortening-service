@@ -26,6 +26,7 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
 	router.Use(middlewares.GzipHandle)
+	router.Use(middlewares.UserCookieHandle)
 
 	handler := &Handler{
 		service: service,
@@ -42,6 +43,7 @@ func (h *Handler) setRouting() {
 	h.router.Get("/{id}", h.handleGet)
 	h.router.Post("/", h.handlePost)
 	h.router.Post("/api/shorten", h.handlePostJSON)
+	h.router.Get("/api/user/urls", h.handleGetUserURLs)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +55,9 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	originURL := string(urlRead)
+	userID := r.Context().Value(config.UserIDCookieName).(string)
 
-	urlModel, err := h.service.GetURLModel(originURL)
+	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -87,7 +90,9 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	urlModel, err := h.service.GetURLModel(originURL)
+	userID := r.Context().Value(config.UserIDCookieName).(string)
+
+	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -102,6 +107,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	response, err := json.Marshal(shortURLSender)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -120,4 +126,50 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Location", url.Origin)
 	w.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
+
+	userID := r.Context().Value(config.UserIDCookieName).(string)
+
+	if userID == "" {
+		http.Error(w, "user ID is empty", http.StatusInternalServerError)
+		return
+	}
+
+	userUrls, err := h.service.GetUserURLs(userID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	if len(userUrls) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	type Output struct {
+		ShortURL    string `json:"short_url"`
+		OriginalURL string `json:"original_url"`
+	}
+
+	outputList := make([]Output, 0, len(userUrls))
+
+	for _, v := range userUrls {
+		p := Output{
+			ShortURL:    h.conf.BaseURL + "/" + v.Short,
+			OriginalURL: v.Origin,
+		}
+		outputList = append(outputList, p)
+	}
+
+	userUrlsJSON, err := json.Marshal(outputList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(userUrlsJSON)
 }

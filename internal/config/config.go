@@ -6,9 +6,6 @@ import (
 	"github.com/caarlos0/env/v6"
 )
 
-const ShortURLLen = 7
-const Compression = "gzip"
-
 type Config struct {
 	ServerAddr string `env:"SERVER_ADDRESS" envDefault:"localhost:8080"`
 	BaseURL    string `env:"BASE_URL" envDefault:"http://localhost:8080"`

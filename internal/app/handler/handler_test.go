@@ -27,6 +27,7 @@ func TestHandler_handleGet(t *testing.T) {
 	}
 
 	type fields struct {
+		userID   string
 		original string
 		short    string
 	}
@@ -41,6 +42,7 @@ func TestHandler_handleGet(t *testing.T) {
 			fields: fields{
 				short:    "qwertyT",
 				original: "www.yandex.ru",
+				userID:   "111",
 			},
 			want: want{
 				code:     http.StatusTemporaryRedirect,
@@ -53,6 +55,7 @@ func TestHandler_handleGet(t *testing.T) {
 			fields: fields{
 				short:    "qwertyT",
 				original: "",
+				userID:   "111",
 			},
 			want: want{
 				code:     http.StatusBadRequest,
@@ -68,7 +71,7 @@ func TestHandler_handleGet(t *testing.T) {
 			URLStorage := storage.NewUrls()
 
 			if tt.fields.original != "" {
-				_ = URLStorage.Add(service.NewURL(tt.fields.original, tt.fields.short))
+				_ = URLStorage.Add(tt.fields.userID, service.NewURL(tt.fields.original, tt.fields.short))
 			}
 
 			service := service.NewService(URLStorage)
@@ -106,6 +109,7 @@ func TestHandler_handlePost(t *testing.T) {
 	type fields struct {
 		original string
 		short    string
+		userID   string
 	}
 
 	tests := []struct {
@@ -129,6 +133,7 @@ func TestHandler_handlePost(t *testing.T) {
 			fields: fields{
 				original: "",
 				short:    "qwertyT",
+				userID:   "111",
 			},
 			want: want{
 				code: http.StatusBadRequest,
@@ -178,6 +183,7 @@ func TestHandler_handlePostJSON(t *testing.T) {
 		shortURL    string
 		contentType string
 		compareBody bool
+		userID      string
 	}
 
 	tests := []struct {

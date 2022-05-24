@@ -149,7 +149,22 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUrlsJSON, err := json.Marshal(userUrls)
+	type Output struct {
+		ShortURL    string `json:"short_url"`
+		OriginalURL string `json:"original_url"`
+	}
+
+	outputList := make([]Output, 0, len(userUrls))
+
+	for _, v := range userUrls {
+		p := Output{
+			ShortURL:    h.conf.BaseURL + "/" + v.Short,
+			OriginalURL: v.Origin,
+		}
+		outputList = append(outputList, p)
+	}
+
+	userUrlsJSON, err := json.Marshal(outputList)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

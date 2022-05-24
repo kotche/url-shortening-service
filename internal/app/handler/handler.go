@@ -155,6 +155,6 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(userUrlsJSON)
-	w.Header().Add("Content-Type", "application/json")
 }

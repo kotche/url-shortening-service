@@ -1,13 +1,12 @@
 package service
 
 type URL struct {
-	Origin string `json:"origin"`
-	Short  string `json:"short"`
+	Short  string `json:"short_url"`
+	Origin string `json:"original_url"`
 }
 
 func NewURL(origin, short string) *URL {
 	return &URL{Origin: origin,
 		Short: short,
 	}
-
 }

@@ -11,9 +11,15 @@ import (
 )
 
 type FileStorage struct {
-	file    *os.File
-	encoder *json.Encoder
-	urls    map[string]*service.URL
+	file      *os.File
+	encoder   *json.Encoder
+	urls      map[string]*service.URL
+	urlsUsers map[string][]*service.URL
+}
+
+type DataFile struct {
+	Owner string `json:"owner"`
+	*service.URL
 }
 
 func NewFileStorage(fileName string) (*FileStorage, error) {
@@ -23,36 +29,44 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	}
 
 	urls := make(map[string]*service.URL)
+	urlsUsers := make(map[string][]*service.URL)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		model := &service.URL{}
-		err := json.Unmarshal(scanner.Bytes(), model)
+		dataFile := &DataFile{}
+		err = json.Unmarshal(scanner.Bytes(), dataFile)
 		if err != nil {
 			return nil, err
 		}
-		urls[model.Short] = model
+		urls[dataFile.Short] = dataFile.URL
+		urlsUsers[dataFile.Owner] = append(urlsUsers[dataFile.Owner], dataFile.URL)
 	}
 
-	if err := scanner.Err(); err != nil {
+	if err = scanner.Err(); err != nil {
 		return nil, err
 	}
 
 	return &FileStorage{
-		file:    file,
-		encoder: json.NewEncoder(file),
-		urls:    urls,
+		file:      file,
+		encoder:   json.NewEncoder(file),
+		urls:      urls,
+		urlsUsers: urlsUsers,
 	}, nil
 }
 
-func (f *FileStorage) Add(url *service.URL) error {
+func (f *FileStorage) Add(userID string, url *service.URL) error {
 	mu := &sync.Mutex{}
 	mu.Lock()
 	defer mu.Unlock()
 
-	f.urls[url.Short] = url
+	dataFile := &DataFile{}
+	dataFile.URL = url
+	dataFile.Owner = userID
 
-	err := f.encoder.Encode(url)
+	f.urls[url.Short] = url
+	f.urlsUsers[userID] = append(f.urlsUsers[userID], url)
+
+	err := f.encoder.Encode(dataFile)
 	if err != nil {
 		return err
 	}
@@ -67,6 +81,11 @@ func (f *FileStorage) GetByID(id string) (*service.URL, error) {
 	}
 
 	return original, nil
+}
+
+func (f *FileStorage) GetUserURLs(userID string) ([]*service.URL, error) {
+	usersURLs := f.urlsUsers[userID]
+	return usersURLs, nil
 }
 
 func (f *FileStorage) Close() error {

@@ -10,8 +10,9 @@ import (
 const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type Storage interface {
-	Add(url *URL) error
+	Add(userID string, url *URL) error
 	GetByID(id string) (*URL, error)
+	GetUserURLs(userID string) ([]*URL, error)
 	Close() error
 }
 
@@ -32,14 +33,14 @@ func (s *Service) MakeShortURL() string {
 	return string(b)
 }
 
-func (s *Service) GetURLModel(originURL string) (*URL, error) {
+func (s *Service) GetURLModel(userID string, originURL string) (*URL, error) {
 	shortURL := s.MakeShortURL()
 	urlModel, _ := s.st.GetByID(shortURL)
 
 	for {
 		if urlModel == nil {
 			urlModel = NewURL(originURL, shortURL)
-			err := s.st.Add(urlModel)
+			err := s.st.Add(userID, urlModel)
 			if err != nil {
 				return nil, err
 			}
@@ -59,4 +60,13 @@ func (s *Service) GetURLModelByID(shortURL string) (*URL, error) {
 		return nil, err
 	}
 	return urlModel, nil
+}
+
+func (s *Service) GetUserURLs(userID string) ([]*URL, error) {
+	userURLs, err := s.st.GetUserURLs(userID)
+
+	if err != nil {
+		return nil, err
+	}
+	return userURLs, nil
 }

@@ -15,20 +15,18 @@ func UserCookieHandle(next http.Handler) http.Handler {
 			userIDCookie string
 		)
 
-		userIDCookieString := config.UserIDCookie
-
-		cookieID := utils.GetCookieParam(r, userIDCookieString)
+		cookieID := utils.GetCookieParam(r, string(config.UserIDCookieName))
 		if cookieID != "" {
 			userID = utils.GetUserIDFromCookie(cookieID)
 			if userID != "" {
-				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userIDCookieString, userID)))
+				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), config.UserIDCookieName, userID)))
 				return
 			}
 		}
 
 		userID, userIDCookie = utils.MakeUserIDCookie()
-		cookie := http.Cookie{Name: config.UserIDCookie, Value: userIDCookie}
+		cookie := http.Cookie{Name: string(config.UserIDCookieName), Value: userIDCookie}
 		http.SetCookie(w, &cookie)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), userIDCookieString, userID)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), config.UserIDCookieName, userID)))
 	})
 }

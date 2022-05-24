@@ -55,7 +55,7 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	originURL := string(urlRead)
-	userID := r.Context().Value(config.UserIDCookie).(string)
+	userID := r.Context().Value(config.UserIDCookieName).(string)
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
@@ -90,7 +90,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value(config.UserIDCookie).(string)
+	userID := r.Context().Value(config.UserIDCookieName).(string)
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
@@ -130,7 +130,7 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value(config.UserIDCookie).(string)
+	userID := r.Context().Value(config.UserIDCookieName).(string)
 
 	if userID == "" {
 		http.Error(w, "user ID is empty", http.StatusInternalServerError)

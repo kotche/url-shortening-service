@@ -1,10 +1,12 @@
 package config
 
+type ContextType string
+
 const (
-	ShortURLLen  = 7
-	Compression  = "gzip"
-	UserIDCookie = "userID"
-	UserIDLen    = 16
+	ShortURLLen                  = 7
+	Compression                  = "gzip"
+	UserIDCookieName ContextType = "userID"
+	UserIDLen                    = 16
 )
 
 func GetSecretKey() []byte {

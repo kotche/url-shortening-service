@@ -44,6 +44,7 @@ func (h *Handler) setRouting() {
 	h.router.Post("/", h.handlePost)
 	h.router.Post("/api/shorten", h.handlePostJSON)
 	h.router.Get("/api/user/urls", h.handleGetUserURLs)
+	h.router.Get("/ping", h.handlePing)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -172,4 +173,13 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(userUrlsJSON)
+}
+
+func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
+	err := h.service.Ping()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

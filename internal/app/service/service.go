@@ -16,12 +16,21 @@ type Storage interface {
 	Close() error
 }
 
+type Database interface {
+	Ping() error
+}
+
 type Service struct {
 	st Storage
+	db Database
 }
 
 func NewService(st Storage) *Service {
 	return &Service{st: st}
+}
+
+func (s *Service) SetDB(db Database) {
+	s.db = db
 }
 
 func (s *Service) MakeShortURL() string {
@@ -69,4 +78,11 @@ func (s *Service) GetUserURLs(userID string) ([]*URL, error) {
 		return nil, err
 	}
 	return userURLs, nil
+}
+
+func (s *Service) Ping() error {
+	if err := s.db.Ping(); err != nil {
+		return err
+	}
+	return nil
 }

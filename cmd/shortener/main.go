@@ -18,31 +18,35 @@ func main() {
 		return
 	}
 
-	var URLStorage service.Storage
+	var (
+		URLStorage service.Storage
+		Database   service.Database
+		serviceURL *service.Service
+	)
 
-	if conf.FilePath == "" {
-		URLStorage = storage.NewUrls()
-	} else {
+	if conf.DBConnect != "" {
+		Database, err = postgres.NewDB(conf.DBConnect)
+		if err != nil {
+			log.Fatal(err.Error())
+			return
+		}
+		serviceURL = service.NewService(Database)
+		serviceURL.SetDB(Database)
+
+		defer Database.Close()
+	} else if conf.FilePath != "" {
 		URLStorage, err = storage.NewFileStorage(conf.FilePath)
 		if err != nil {
 			log.Fatal(err.Error())
 			return
 		}
+		serviceURL = service.NewService(URLStorage)
 		defer URLStorage.Close()
+	} else {
+		URLStorage = storage.NewUrls()
+		serviceURL = service.NewService(URLStorage)
 	}
 
-	service := service.NewService(URLStorage)
-
-	if conf.DBConnect != "" {
-		db, err := postgres.NewDB(conf.DBConnect)
-		if err != nil {
-			log.Fatal(err.Error())
-			return
-		}
-		service.SetDB(db)
-	}
-
-	handler := handler.NewHandler(service, conf)
-
+	handler := handler.NewHandler(serviceURL, conf)
 	log.Fatal(http.ListenAndServe(conf.ServerAddr, handler.GetRouter()))
 }

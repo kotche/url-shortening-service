@@ -51,17 +51,18 @@ func (d *DB) GetUserURLs(userID string) ([]*service.URL, error) {
 	urls := make([]*service.URL, 0)
 
 	rows, err := d.conn.Query("SELECT short, origin FROM public.urls WHERE user_id=$1", userID)
-	defer rows.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
+
 	for rows.Next() {
-		var url *service.URL
+		var url service.URL
 		err = rows.Scan(&url.Short, &url.Origin)
 		if err != nil {
 			return nil, err
 		}
-		urls = append(urls, url)
+		urls = append(urls, &url)
 	}
 
 	return urls, nil

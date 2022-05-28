@@ -65,6 +65,11 @@ func (d *DB) GetUserURLs(userID string) ([]*service.URL, error) {
 		urls = append(urls, &url)
 	}
 
+	err = rows.Err()
+	if err != nil {
+		log.Println(err.Error())
+	}
+
 	return urls, nil
 }
 

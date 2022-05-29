@@ -102,20 +102,26 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 	userID := r.Context().Value(config.UserIDCookieName).(string)
 
+	var shortenURL string
+
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
 		if errors.As(err, &usecase.ErrConflictURL{}) {
+			e := err.(usecase.ErrConflictURL)
 			w.WriteHeader(http.StatusConflict)
+			shortenURL = e.ShortenURL
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+	} else {
+		shortenURL = urlModel.Short
 	}
 
 	shortURLSender := &struct {
 		ShortURL string `json:"result"`
 	}{
-		ShortURL: h.conf.BaseURL + "/" + urlModel.Short,
+		ShortURL: h.conf.BaseURL + "/" + shortenURL,
 	}
 
 	response, err := json.Marshal(shortURLSender)

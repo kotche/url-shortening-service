@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -24,14 +25,31 @@ func NewDB(DSN string) (*DB, error) {
 }
 
 func (d *DB) Add(userID string, url *service.URL) error {
-	_, err := d.conn.Exec("INSERT INTO public.users(user_id) VALUES ($1);", userID)
+	ctx := context.Background()
+
+	_, err := d.conn.ExecContext(ctx,
+		"INSERT INTO public.users(user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id;", userID)
 	if err != nil {
 		return err
 	}
-	_, err = d.conn.Exec("INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3);", url.Short, url.Origin, userID)
+
+	stmt, err := d.conn.PrepareContext(ctx,
+		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
+	result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
+
+	var output sql.NullString
+	result.Scan(&output)
+	if output.Valid {
+		url.Short = output.String
+	} else {
+		log.Printf("URL short:%s, origin:%s no valid", url.Short, url.Origin)
+	}
+
 	return nil
 }
 
@@ -85,6 +103,41 @@ func (d *DB) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (d *DB) WriteBatch(ctx context.Context, userID string, urls []*service.URL) error {
+
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	_, err = d.conn.ExecContext(ctx, "INSERT INTO public.users(user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id;", userID)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.PrepareContext(ctx,
+		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, url := range urls {
+		result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
+		var output sql.NullString
+		result.Scan(&output)
+		if output.Valid {
+			url.Short = output.String
+		} else {
+			log.Printf("URL short:%s, origin:%s no valid", url.Short, url.Origin)
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *DB) init() {

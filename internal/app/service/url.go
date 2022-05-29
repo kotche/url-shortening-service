@@ -10,3 +10,13 @@ func NewURL(origin, short string) *URL {
 		Short: short,
 	}
 }
+
+type InputCorrelationURL struct {
+	CorrelationID string `json:"correlation_id"`
+	Origin        string `json:"original_url"`
+}
+
+type OutputCorrelationURL struct {
+	CorrelationID string `json:"correlation_id"`
+	Short         string `json:"short_url"`
+}

@@ -45,6 +45,7 @@ func (h *Handler) setRouting() {
 	h.router.Post("/api/shorten", h.handlePostJSON)
 	h.router.Get("/api/user/urls", h.handleGetUserURLs)
 	h.router.Get("/ping", h.handlePing)
+	h.router.Post("/api/shorten/batch", h.handlePostShortenBatch)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -182,4 +183,36 @@ func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil || len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	inputDataList := make([]service.InputCorrelationURL, 0)
+	err = json.Unmarshal(body, &inputDataList)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	userID := r.Context().Value(config.UserIDCookieName).(string)
+	outputDataList, err := h.service.ShortenBatch(userID, inputDataList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for ind := range outputDataList {
+		outputDataList[ind].Short = h.conf.BaseURL + "/" + outputDataList[ind].Short
+	}
+
+	correlationURLs, _ := json.Marshal(outputDataList)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(correlationURLs)
 }

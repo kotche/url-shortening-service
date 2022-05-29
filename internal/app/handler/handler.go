@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
 
@@ -61,7 +63,13 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.As(err, &usecase.ErrConflictURL{}) {
+			e := err.(usecase.ErrConflictURL)
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -96,7 +104,13 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.As(err, &usecase.ErrConflictURL{}) {
+			e := err.(usecase.ErrConflictURL)
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
 

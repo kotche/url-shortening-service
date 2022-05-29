@@ -3,11 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 type DB struct {
@@ -42,12 +44,10 @@ func (d *DB) Add(userID string, url *service.URL) error {
 
 	result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
 
-	var output sql.NullString
+	var output string
 	result.Scan(&output)
-	if output.Valid {
-		url.Short = output.String
-	} else {
-		log.Printf("URL short:%s, origin:%s no valid", url.Short, url.Origin)
+	if output != url.Short {
+		return usecase.ErrConflictURL{Err: errors.New("duplicate URL"), ShortenURL: output}
 	}
 
 	return nil

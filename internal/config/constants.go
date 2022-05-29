@@ -7,7 +7,7 @@ const (
 	Compression                  = "gzip"
 	UserIDCookieName ContextType = "user_id"
 	CookieMaxAge                 = 86400
-	UserIDLen                    = 16
+	UserIDLen                    = 8
 )
 
 func GetSecretKey() []byte {

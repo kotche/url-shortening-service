@@ -115,6 +115,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	} else {
+		w.WriteHeader(http.StatusCreated)
 		shortenURL = urlModel.Short
 	}
 
@@ -131,7 +132,6 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }
 

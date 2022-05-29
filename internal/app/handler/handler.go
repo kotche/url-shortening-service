@@ -83,8 +83,6 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-
 	originURLReceiver := &struct {
 		OriginURL string `json:"url"`
 	}{}
@@ -107,13 +105,11 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
 		if errors.As(err, &usecase.ErrConflictURL{}) {
-			e := err.(usecase.ErrConflictURL)
 			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
 		} else {
 			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
-		return
 	}
 
 	shortURLSender := &struct {
@@ -128,6 +124,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }

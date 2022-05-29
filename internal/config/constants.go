@@ -6,6 +6,7 @@ const (
 	ShortURLLen                  = 7
 	Compression                  = "gzip"
 	UserIDCookieName ContextType = "userID"
+	CookieMaxAge                 = 86400
 	UserIDLen                    = 16
 )
 

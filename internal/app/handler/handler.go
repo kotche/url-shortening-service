@@ -100,6 +100,8 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	userID := r.Context().Value(config.UserIDCookieName).(string)
 
 	var shortenURL string
@@ -131,7 +133,6 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.Write(response)
 }
 

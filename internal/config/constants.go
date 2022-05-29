@@ -5,7 +5,7 @@ type ContextType string
 const (
 	ShortURLLen                  = 7
 	Compression                  = "gzip"
-	UserIDCookieName ContextType = "userID"
+	UserIDCookieName ContextType = "user_id"
 	CookieMaxAge                 = 86400
 	UserIDLen                    = 16
 )

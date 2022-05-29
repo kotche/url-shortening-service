@@ -95,12 +95,19 @@ func (s *Service) Ping() error {
 
 func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
 
-	output := make([]OutputCorrelationURL, 0, len(input))
-	urls := make([]*URL, 0, len(input))
+	output := make([]OutputCorrelationURL, 0)
+	urls := make([]*URL, 0)
 	for _, correlationURL := range input {
 		shortURL := s.MakeShortURL()
 		urlModel := NewURL(correlationURL.Origin, shortURL)
+
+		out := OutputCorrelationURL{
+			CorrelationID: correlationURL.CorrelationID,
+			Short:         urlModel.Short,
+		}
+
 		urls = append(urls, urlModel)
+		output = append(output, out)
 	}
 
 	ctx := context.Background()
@@ -108,14 +115,6 @@ func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]Ou
 	err := s.db.WriteBatch(ctx, userID, urls)
 	if err != nil {
 		return nil, err
-	}
-
-	for ind, correlationURL := range input {
-		out := OutputCorrelationURL{
-			CorrelationID: correlationURL.CorrelationID,
-			Short:         urls[ind].Short,
-		}
-		output = append(output, out)
 	}
 
 	return output, nil

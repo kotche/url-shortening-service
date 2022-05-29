@@ -119,8 +119,6 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls []*service.URL)
 		return err
 	}
 
-	//stmt, err := tx.PrepareContext(ctx,
-	//	"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
 	stmt, err := tx.PrepareContext(ctx,
 		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3)")
 	if err != nil {
@@ -134,10 +132,6 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls []*service.URL)
 			log.Println(err.Error())
 			return err
 		}
-		//result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
-		//var output string
-		//result.Scan(&output)
-		//url.Short = output
 	}
 
 	return tx.Commit()

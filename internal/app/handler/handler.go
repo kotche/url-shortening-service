@@ -83,6 +83,8 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	originURLReceiver := &struct {
 		OriginURL string `json:"url"`
 	}{}
@@ -126,7 +128,6 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }

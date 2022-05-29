@@ -119,22 +119,25 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls []*service.URL)
 		return err
 	}
 
+	//stmt, err := tx.PrepareContext(ctx,
+	//	"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
 	stmt, err := tx.PrepareContext(ctx,
-		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
+		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3)")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
 	for _, url := range urls {
-		result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
-		var output sql.NullString
-		result.Scan(&output)
-		if output.Valid {
-			url.Short = output.String
-		} else {
-			log.Printf("URL short:%s, origin:%s no valid", url.Short, url.Origin)
+		_, err = stmt.ExecContext(ctx, url.Short, url.Origin, userID)
+		if err != nil {
+			log.Println(err.Error())
+			return err
 		}
+		//result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
+		//var output string
+		//result.Scan(&output)
+		//url.Short = output
 	}
 
 	return tx.Commit()

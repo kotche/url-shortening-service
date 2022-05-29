@@ -15,7 +15,6 @@ import (
 func GetCookieParam(r *http.Request, name string) string {
 	cookieParam, err := r.Cookie(name)
 	if err != nil {
-		log.Println(err.Error())
 		return ""
 	}
 	return cookieParam.Value

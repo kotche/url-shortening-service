@@ -47,7 +47,7 @@ func (d *DB) Add(userID string, url *service.URL) error {
 	var output string
 	result.Scan(&output)
 	if output != url.Short {
-		return usecase.ErrConflictURL{Err: errors.New("duplicate URL"), ShortenURL: output}
+		return usecase.ConflictURLError{Err: errors.New("duplicate URL"), ShortenURL: output}
 	}
 
 	return nil

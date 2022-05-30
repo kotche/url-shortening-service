@@ -63,8 +63,8 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		if errors.As(err, &usecase.ErrConflictURL{}) {
-			e := err.(usecase.ErrConflictURL)
+		if errors.As(err, &usecase.ConflictURLError{}) {
+			e := err.(usecase.ConflictURLError)
 			w.WriteHeader(http.StatusConflict)
 			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
 		} else {
@@ -108,8 +108,8 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		if errors.As(err, &usecase.ErrConflictURL{}) {
-			e := err.(usecase.ErrConflictURL)
+		if errors.As(err, &usecase.ConflictURLError{}) {
+			e := err.(usecase.ConflictURLError)
 			w.WriteHeader(http.StatusConflict)
 			shortenURL = e.ShortenURL
 		} else {

@@ -61,20 +61,24 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	originURL := string(urlRead)
 	userID := r.Context().Value(config.UserIDCookieName).(string)
 
+	status := http.StatusCreated
+	var shortenURL string
+
 	urlModel, err := h.service.GetURLModel(userID, originURL)
-	if err != nil {
-		if errors.As(err, &usecase.ErrConflictURL{}) {
-			e := err.(usecase.ErrConflictURL)
-			w.WriteHeader(http.StatusConflict)
-			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-		}
+
+	if errors.As(err, &usecase.ConflictURLError{}) {
+		e := err.(usecase.ConflictURLError)
+		status = http.StatusConflict
+		shortenURL = e.ShortenURL
+	} else if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
 		return
+	} else {
+		shortenURL = urlModel.Short
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte(h.conf.BaseURL + "/" + urlModel.Short))
+	w.WriteHeader(status)
+	w.Write([]byte(h.conf.BaseURL + "/" + shortenURL))
 }
 
 func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
@@ -104,20 +108,19 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 	userID := r.Context().Value(config.UserIDCookieName).(string)
 
+	status := http.StatusCreated
 	var shortenURL string
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
-	if err != nil {
-		if errors.As(err, &usecase.ErrConflictURL{}) {
-			e := err.(usecase.ErrConflictURL)
-			w.WriteHeader(http.StatusConflict)
-			shortenURL = e.ShortenURL
-		} else {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
+
+	if errors.As(err, &usecase.ConflictURLError{}) {
+		e := err.(usecase.ConflictURLError)
+		status = http.StatusConflict
+		shortenURL = e.ShortenURL
+	} else if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	} else {
-		w.WriteHeader(http.StatusCreated)
 		shortenURL = urlModel.Short
 	}
 
@@ -133,6 +136,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.WriteHeader(status)
 	w.Write(response)
 }
 

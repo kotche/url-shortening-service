@@ -47,7 +47,7 @@ func (d *DB) Add(userID string, url *service.URL) error {
 	var output string
 	result.Scan(&output)
 	if output != url.Short {
-		return usecase.ErrConflictURL{Err: errors.New("duplicate URL"), ShortenURL: output}
+		return usecase.ConflictURLError{Err: errors.New("duplicate URL"), ShortenURL: output}
 	}
 
 	return nil
@@ -58,7 +58,7 @@ func (d *DB) GetByID(id string) (*service.URL, error) {
 	row := d.conn.QueryRow("SELECT origin FROM public.urls WHERE short=$1", id)
 	row.Scan(&output)
 	if output.Valid && output.String != "" {
-		url := service.NewURL(id, output.String)
+		url := service.NewURL(output.String, id)
 		return url, nil
 	} else {
 		return nil, fmt.Errorf("key not found")

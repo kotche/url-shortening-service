@@ -105,7 +105,7 @@ func (d *DB) Ping() error {
 	return nil
 }
 
-func (d *DB) WriteBatch(ctx context.Context, userID string, urls []*service.URL) error {
+func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*service.URL) error {
 
 	tx, err := d.conn.Begin()
 	if err != nil {

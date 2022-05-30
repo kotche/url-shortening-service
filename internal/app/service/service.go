@@ -20,7 +20,7 @@ type Storage interface {
 type Database interface {
 	Storage
 	Ping() error
-	WriteBatch(ctx context.Context, userID string, urls []*URL) error
+	WriteBatch(ctx context.Context, userID string, urls map[string]*URL) error
 }
 
 type Service struct {
@@ -96,17 +96,25 @@ func (s *Service) Ping() error {
 func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
 
 	output := make([]OutputCorrelationURL, 0)
-	urls := make([]*URL, 0)
+	urls := make(map[string]*URL)
 	for _, correlationURL := range input {
-		shortURL := s.MakeShortURL()
-		urlModel := NewURL(correlationURL.Origin, shortURL)
+		var urlModel *URL
+
+		for {
+			shortURL := s.MakeShortURL()
+			if _, ok := urls[shortURL]; ok {
+				continue
+			}
+			urlModel = NewURL(correlationURL.Origin, shortURL)
+			urls[shortURL] = urlModel
+			break
+		}
 
 		out := OutputCorrelationURL{
 			CorrelationID: correlationURL.CorrelationID,
 			Short:         urlModel.Short,
 		}
 
-		urls = append(urls, urlModel)
 		output = append(output, out)
 	}
 

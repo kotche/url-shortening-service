@@ -25,7 +25,7 @@ func UserCookieHandle(next http.Handler) http.Handler {
 		}
 
 		userID, userIDCookie = utils.MakeUserIDCookie()
-		cookie := http.Cookie{Name: string(config.UserIDCookieName), Value: userIDCookie}
+		cookie := http.Cookie{Name: string(config.UserIDCookieName), Value: userIDCookie, Path: "/", MaxAge: config.CookieMaxAge}
 		http.SetCookie(w, &cookie)
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), config.UserIDCookieName, userID)))
 	})

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"math/rand"
 	"time"
 
@@ -19,6 +20,7 @@ type Storage interface {
 type Database interface {
 	Storage
 	Ping() error
+	WriteBatch(ctx context.Context, userID string, urls map[string]*URL) error
 }
 
 type Service struct {
@@ -44,10 +46,13 @@ func (s *Service) MakeShortURL() string {
 }
 
 func (s *Service) GetURLModel(userID string, originURL string) (*URL, error) {
-	shortURL := s.MakeShortURL()
-	urlModel, _ := s.st.GetByID(shortURL)
+
+	var urlModel *URL
 
 	for {
+		shortURL := s.MakeShortURL()
+		urlModel, _ = s.st.GetByID(shortURL)
+
 		if urlModel == nil {
 			urlModel = NewURL(originURL, shortURL)
 			err := s.st.Add(userID, urlModel)
@@ -86,4 +91,39 @@ func (s *Service) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
+
+	output := make([]OutputCorrelationURL, 0)
+	urls := make(map[string]*URL)
+	for _, correlationURL := range input {
+		var urlModel *URL
+
+		for {
+			shortURL := s.MakeShortURL()
+			if _, ok := urls[shortURL]; ok {
+				continue
+			}
+			urlModel = NewURL(correlationURL.Origin, shortURL)
+			urls[shortURL] = urlModel
+			break
+		}
+
+		out := OutputCorrelationURL{
+			CorrelationID: correlationURL.CorrelationID,
+			Short:         urlModel.Short,
+		}
+
+		output = append(output, out)
+	}
+
+	ctx := context.Background()
+
+	err := s.db.WriteBatch(ctx, userID, urls)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
 }

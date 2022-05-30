@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
 
@@ -45,6 +47,7 @@ func (h *Handler) setRouting() {
 	h.router.Post("/api/shorten", h.handlePostJSON)
 	h.router.Get("/api/user/urls", h.handleGetUserURLs)
 	h.router.Get("/ping", h.handlePing)
+	h.router.Post("/api/shorten/batch", h.handlePostShortenBatch)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +63,13 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+		if errors.As(err, &usecase.ErrConflictURL{}) {
+			e := err.(usecase.ErrConflictURL)
+			w.WriteHeader(http.StatusConflict)
+			w.Write([]byte(h.conf.BaseURL + "/" + e.ShortenURL))
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+		}
 		return
 	}
 
@@ -91,18 +100,31 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+
 	userID := r.Context().Value(config.UserIDCookieName).(string)
+
+	var shortenURL string
 
 	urlModel, err := h.service.GetURLModel(userID, originURL)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		if errors.As(err, &usecase.ErrConflictURL{}) {
+			e := err.(usecase.ErrConflictURL)
+			w.WriteHeader(http.StatusConflict)
+			shortenURL = e.ShortenURL
+		} else {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		shortenURL = urlModel.Short
 	}
 
 	shortURLSender := &struct {
 		ShortURL string `json:"result"`
 	}{
-		ShortURL: h.conf.BaseURL + "/" + urlModel.Short,
+		ShortURL: h.conf.BaseURL + "/" + shortenURL,
 	}
 
 	response, err := json.Marshal(shortURLSender)
@@ -111,8 +133,6 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 	w.Write(response)
 }
 
@@ -182,4 +202,37 @@ func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil || len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	inputDataList := make([]service.InputCorrelationURL, 0)
+	err = json.Unmarshal(body, &inputDataList)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	userID := r.Context().Value(config.UserIDCookieName).(string)
+	outputDataList, err := h.service.ShortenBatch(userID, inputDataList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for ind := range outputDataList {
+		outputDataList[ind].Short = h.conf.BaseURL + "/" + outputDataList[ind].Short
+	}
+
+	correlationURLs, _ := json.Marshal(outputDataList)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(correlationURLs)
 }

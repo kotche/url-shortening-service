@@ -5,8 +5,9 @@ type ContextType string
 const (
 	ShortURLLen                  = 7
 	Compression                  = "gzip"
-	UserIDCookieName ContextType = "userID"
-	UserIDLen                    = 16
+	UserIDCookieName ContextType = "user_id"
+	CookieMaxAge                 = 86400
+	UserIDLen                    = 8
 )
 
 func GetSecretKey() []byte {

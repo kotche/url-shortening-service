@@ -1,12 +1,15 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 type DB struct {
@@ -24,14 +27,29 @@ func NewDB(DSN string) (*DB, error) {
 }
 
 func (d *DB) Add(userID string, url *service.URL) error {
-	_, err := d.conn.Exec("INSERT INTO public.users(user_id) VALUES ($1);", userID)
+	ctx := context.Background()
+
+	_, err := d.conn.ExecContext(ctx,
+		"INSERT INTO public.users(user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id;", userID)
 	if err != nil {
 		return err
 	}
-	_, err = d.conn.Exec("INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3);", url.Short, url.Origin, userID)
+
+	stmt, err := d.conn.PrepareContext(ctx,
+		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3) ON CONFLICT (origin,user_id) DO UPDATE SET origin=EXCLUDED.origin RETURNING short")
 	if err != nil {
 		return err
 	}
+	defer stmt.Close()
+
+	result := stmt.QueryRowContext(ctx, url.Short, url.Origin, userID)
+
+	var output string
+	result.Scan(&output)
+	if output != url.Short {
+		return usecase.ErrConflictURL{Err: errors.New("duplicate URL"), ShortenURL: output}
+	}
+
 	return nil
 }
 
@@ -85,6 +103,38 @@ func (d *DB) Ping() error {
 		return err
 	}
 	return nil
+}
+
+func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*service.URL) error {
+
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	_, err = d.conn.ExecContext(ctx, "INSERT INTO public.users(user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id;", userID)
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.PrepareContext(ctx,
+		"INSERT INTO public.urls(short,origin,user_id) VALUES ($1,$2,$3)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, url := range urls {
+		_, err = stmt.ExecContext(ctx, url.Short, url.Origin, userID)
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *DB) init() {

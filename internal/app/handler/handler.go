@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -48,6 +50,7 @@ func (h *Handler) setRouting() {
 	h.router.Get("/api/user/urls", h.handleGetUserURLs)
 	h.router.Get("/ping", h.handlePing)
 	h.router.Post("/api/shorten/batch", h.handlePostShortenBatch)
+	h.router.Delete("/api/user/urls", h.handleDeleteURLs)
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -144,7 +147,11 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
 	url, err := h.service.GetURLModelByID(shortURL)
-	if err != nil {
+
+	if errors.As(err, &usecase.GoneError{}) {
+		w.WriteHeader(http.StatusGone)
+		return
+	} else if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(err.Error()))
 		return
@@ -225,7 +232,10 @@ func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request)
 	}
 
 	userID := r.Context().Value(config.UserIDCookieName).(string)
-	outputDataList, err := h.service.ShortenBatch(userID, inputDataList)
+
+	ctx := context.Background()
+
+	outputDataList, err := h.service.ShortenBatch(ctx, userID, inputDataList)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -239,4 +249,30 @@ func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(correlationURLs)
+}
+
+func (h *Handler) handleDeleteURLs(w http.ResponseWriter, r *http.Request) {
+	defer r.Body.Close()
+	body, err := io.ReadAll(r.Body)
+	if err != nil || len(body) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	toDelete := make([]string, 0)
+	err = json.Unmarshal(body, &toDelete)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	userID := r.Context().Value(config.UserIDCookieName).(string)
+	ctx := context.Background()
+
+	go func() {
+		err = h.service.DeleteURLs(ctx, userID, toDelete)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	}()
+
+	w.WriteHeader(http.StatusAccepted)
 }

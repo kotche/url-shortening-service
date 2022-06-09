@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"math/rand"
 	"time"
 
@@ -21,6 +22,7 @@ type Database interface {
 	Storage
 	Ping() error
 	WriteBatch(ctx context.Context, userID string, urls map[string]*URL) error
+	DeleteBatch(ctx context.Context, userID string, toDelete []string) error
 }
 
 type Service struct {
@@ -93,7 +95,7 @@ func (s *Service) Ping() error {
 	return nil
 }
 
-func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
+func (s *Service) ShortenBatch(ctx context.Context, userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
 
 	output := make([]OutputCorrelationURL, 0)
 	urls := make(map[string]*URL)
@@ -118,12 +120,19 @@ func (s *Service) ShortenBatch(userID string, input []InputCorrelationURL) ([]Ou
 		output = append(output, out)
 	}
 
-	ctx := context.Background()
-
 	err := s.db.WriteBatch(ctx, userID, urls)
 	if err != nil {
 		return nil, err
 	}
 
 	return output, nil
+}
+
+func (s *Service) DeleteURLs(ctx context.Context, userID string, toDelete []string) error {
+
+	err := s.db.DeleteBatch(ctx, userID, toDelete)
+	if err != nil {
+		return errors.New("error deleting: " + err.Error())
+	}
+	return nil
 }

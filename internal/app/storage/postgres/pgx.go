@@ -10,6 +10,7 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
+	"github.com/lib/pq"
 )
 
 type DB struct {
@@ -54,11 +55,20 @@ func (d *DB) Add(userID string, url *service.URL) error {
 }
 
 func (d *DB) GetByID(id string) (*service.URL, error) {
-	var output sql.NullString
-	row := d.conn.QueryRow("SELECT origin FROM public.urls WHERE short=$1", id)
-	row.Scan(&output)
-	if output.Valid && output.String != "" {
-		url := service.NewURL(output.String, id)
+	var (
+		output  string
+		deleted bool
+	)
+
+	row := d.conn.QueryRow("SELECT origin,deleted FROM public.urls WHERE short=$1", id)
+	row.Scan(&output, &deleted)
+
+	if deleted == true {
+		return nil, usecase.GoneError{Err: errors.New("URL gone"), ShortenURL: output}
+	}
+
+	if output != "" {
+		url := service.NewURL(output, id)
 		return url, nil
 	} else {
 		return nil, fmt.Errorf("key not found")
@@ -106,7 +116,6 @@ func (d *DB) Ping() error {
 }
 
 func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*service.URL) error {
-
 	tx, err := d.conn.Begin()
 	if err != nil {
 		return err
@@ -137,6 +146,22 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*ser
 	return tx.Commit()
 }
 
+func (d *DB) DeleteBatch(ctx context.Context, userID string, toDelete []string) error {
+	stmt, err := d.conn.PrepareContext(ctx,
+		"UPDATE public.urls SET deleted=true WHERE user_id=$1 AND short=any($2)")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx, userID, pq.Array(toDelete))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (d *DB) init() {
 	_, err := d.conn.Exec(`CREATE TABLE IF NOT EXISTS public.users(
 		    user_id VARCHAR(500) NOT NULL PRIMARY KEY
@@ -146,6 +171,7 @@ func (d *DB) init() {
 		short VARCHAR(50) NOT NULL PRIMARY KEY,
 		origin VARCHAR(500) NOT NULL,
 		user_id VARCHAR(500) NOT NULL,
+		deleted BOOLEAN DEFAULT FALSE NOT NULL,
     	CONSTRAINT uniq_origin_user_id UNIQUE (origin, user_id),
     	FOREIGN KEY (user_id) REFERENCES public.users (user_id));`)
 

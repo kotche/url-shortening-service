@@ -63,7 +63,7 @@ func (d *DB) GetByID(id string) (*service.URL, error) {
 	row := d.conn.QueryRow("SELECT origin,deleted FROM public.urls WHERE short=$1", id)
 	row.Scan(&output, &deleted)
 
-	if deleted == true {
+	if deleted {
 		return nil, usecase.GoneError{Err: errors.New("URL gone"), ShortenURL: output}
 	}
 

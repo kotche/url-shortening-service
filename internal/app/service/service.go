@@ -2,36 +2,51 @@ package service
 
 import (
 	"context"
-	"errors"
+	"log"
 	"math/rand"
 	"time"
 
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 	"github.com/kotche/url-shortening-service/internal/config"
 )
 
 const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type Storage interface {
-	Add(userID string, url *URL) error
-	GetByID(id string) (*URL, error)
-	GetUserURLs(userID string) ([]*URL, error)
+	Add(userID string, url *usecase.URL) error
+	GetByID(id string) (*usecase.URL, error)
+	GetUserURLs(userID string) ([]*usecase.URL, error)
 	Close() error
 }
 
 type Database interface {
 	Storage
 	Ping() error
-	WriteBatch(ctx context.Context, userID string, urls map[string]*URL) error
-	DeleteBatch(ctx context.Context, userID string, toDelete []string) error
+	WriteBatch(ctx context.Context, userID string, urls map[string]*usecase.URL) error
+	DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error
 }
 
 type Service struct {
-	st Storage
-	db Database
+	st           Storage
+	db           Database
+	deletionChan chan usecase.DeleteUserURLs
+	buf          []usecase.DeleteUserURLs
+	timer        *time.Timer
+	isTimeout    bool
 }
 
 func NewService(st Storage) *Service {
-	return &Service{st: st}
+	s := Service{
+		st:           st,
+		deletionChan: make(chan usecase.DeleteUserURLs),
+		buf:          make([]usecase.DeleteUserURLs, 0, config.BufLen),
+		isTimeout:    true,
+		timer:        time.NewTimer(0),
+	}
+
+	go s.worker()
+
+	return &s
 }
 
 func (s *Service) SetDB(db Database) {
@@ -47,16 +62,16 @@ func (s *Service) MakeShortURL() string {
 	return string(b)
 }
 
-func (s *Service) GetURLModel(userID string, originURL string) (*URL, error) {
+func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, error) {
 
-	var urlModel *URL
+	var urlModel *usecase.URL
 
 	for {
 		shortURL := s.MakeShortURL()
 		urlModel, _ = s.st.GetByID(shortURL)
 
 		if urlModel == nil {
-			urlModel = NewURL(originURL, shortURL)
+			urlModel = usecase.NewURL(originURL, shortURL)
 			err := s.st.Add(userID, urlModel)
 			if err != nil {
 				return nil, err
@@ -70,7 +85,7 @@ func (s *Service) GetURLModel(userID string, originURL string) (*URL, error) {
 	return urlModel, nil
 }
 
-func (s *Service) GetURLModelByID(shortURL string) (*URL, error) {
+func (s *Service) GetURLModelByID(shortURL string) (*usecase.URL, error) {
 	urlModel, err := s.st.GetByID(shortURL)
 
 	if err != nil {
@@ -79,7 +94,7 @@ func (s *Service) GetURLModelByID(shortURL string) (*URL, error) {
 	return urlModel, nil
 }
 
-func (s *Service) GetUserURLs(userID string) ([]*URL, error) {
+func (s *Service) GetUserURLs(userID string) ([]*usecase.URL, error) {
 	userURLs, err := s.st.GetUserURLs(userID)
 
 	if err != nil {
@@ -95,24 +110,24 @@ func (s *Service) Ping() error {
 	return nil
 }
 
-func (s *Service) ShortenBatch(ctx context.Context, userID string, input []InputCorrelationURL) ([]OutputCorrelationURL, error) {
+func (s *Service) ShortenBatch(ctx context.Context, userID string, input []usecase.InputCorrelationURL) ([]usecase.OutputCorrelationURL, error) {
 
-	output := make([]OutputCorrelationURL, 0)
-	urls := make(map[string]*URL)
+	output := make([]usecase.OutputCorrelationURL, 0)
+	urls := make(map[string]*usecase.URL)
 	for _, correlationURL := range input {
-		var urlModel *URL
+		var urlModel *usecase.URL
 
 		for {
 			shortURL := s.MakeShortURL()
 			if _, ok := urls[shortURL]; ok {
 				continue
 			}
-			urlModel = NewURL(correlationURL.Origin, shortURL)
+			urlModel = usecase.NewURL(correlationURL.Origin, shortURL)
 			urls[shortURL] = urlModel
 			break
 		}
 
-		out := OutputCorrelationURL{
+		out := usecase.OutputCorrelationURL{
 			CorrelationID: correlationURL.CorrelationID,
 			Short:         urlModel.Short,
 		}
@@ -128,11 +143,46 @@ func (s *Service) ShortenBatch(ctx context.Context, userID string, input []Input
 	return output, nil
 }
 
-func (s *Service) DeleteURLs(ctx context.Context, userID string, toDelete []string) error {
-
-	err := s.db.DeleteBatch(ctx, userID, toDelete)
-	if err != nil {
-		return errors.New("error deleting: " + err.Error())
+func (s *Service) DeleteURLs(userID string, toDelete []string) {
+	for _, v := range toDelete {
+		delUserURLs := usecase.DeleteUserURLs{UserID: userID, Short: v}
+		s.deletionChan <- delUserURLs
 	}
-	return nil
+}
+
+func (s *Service) flush(ctx context.Context) {
+	del := make([]usecase.DeleteUserURLs, len(s.buf))
+	copy(del, s.buf)
+	s.buf = make([]usecase.DeleteUserURLs, 0)
+	go func() {
+		err := s.db.DeleteBatch(ctx, del)
+		if err != nil {
+			log.Printf("error deleting: " + err.Error())
+		}
+	}()
+}
+
+func (s *Service) worker() {
+	ctx := context.Background()
+
+	for {
+		select {
+		case delRequest := <-s.deletionChan:
+			if s.isTimeout {
+				s.timer.Reset(time.Second * config.Timeout)
+				s.isTimeout = false
+			}
+			s.buf = append(s.buf, delRequest)
+			if len(s.buf) >= config.BufLen {
+				s.flush(ctx)
+				s.timer.Stop()
+				s.isTimeout = true
+			}
+		case <-s.timer.C:
+			if len(s.buf) > 0 {
+				s.flush(ctx)
+			}
+			s.isTimeout = true
+		}
+	}
 }

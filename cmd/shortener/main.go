@@ -33,7 +33,12 @@ func main() {
 		serviceURL = service.NewService(Database)
 		serviceURL.SetDB(Database)
 
-		defer Database.Close()
+		defer func() {
+			err = Database.Close()
+			if err != nil {
+				log.Printf(err.Error())
+			}
+		}()
 	} else if conf.FilePath != "" {
 		URLStorage, err = storage.NewFileStorage(conf.FilePath)
 		if err != nil {
@@ -41,12 +46,17 @@ func main() {
 			return
 		}
 		serviceURL = service.NewService(URLStorage)
-		defer URLStorage.Close()
+		defer func() {
+			err = URLStorage.Close()
+			if err != nil {
+				log.Printf(err.Error())
+			}
+		}()
 	} else {
 		URLStorage = storage.NewUrls()
 		serviceURL = service.NewService(URLStorage)
 	}
 
-	handler := handler.NewHandler(serviceURL, conf)
-	log.Fatal(http.ListenAndServe(conf.ServerAddr, handler.GetRouter()))
+	handlerObj := handler.NewHandler(serviceURL, conf)
+	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.GetRouter()))
 }

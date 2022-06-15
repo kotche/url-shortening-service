@@ -1,7 +1,7 @@
 package test
 
 import (
-	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 type Mock struct {
@@ -17,16 +17,16 @@ func NewMock(original, short string) *Mock {
 	}
 }
 
-func (m *Mock) Add(userID string, url *service.URL) error {
+func (m *Mock) Add(userID string, url *usecase.URL) error {
 	url.Short = m.short
 	return nil
 }
 
-func (m *Mock) GetByID(id string) (*service.URL, error) {
+func (m *Mock) GetByID(id string) (*usecase.URL, error) {
 	return nil, nil
 }
 
-func (m *Mock) GetUserURLs(userID string) ([]*service.URL, error) {
+func (m *Mock) GetUserURLs(userID string) ([]*usecase.URL, error) {
 	return nil, nil
 }
 

@@ -8,9 +8,7 @@ import (
 	"log"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/lib/pq"
 )
 
 type DB struct {
@@ -27,7 +25,7 @@ func NewDB(DSN string) (*DB, error) {
 	return db, nil
 }
 
-func (d *DB) Add(userID string, url *service.URL) error {
+func (d *DB) Add(userID string, url *usecase.URL) error {
 	ctx := context.Background()
 
 	_, err := d.conn.ExecContext(ctx,
@@ -54,7 +52,7 @@ func (d *DB) Add(userID string, url *service.URL) error {
 	return nil
 }
 
-func (d *DB) GetByID(id string) (*service.URL, error) {
+func (d *DB) GetByID(id string) (*usecase.URL, error) {
 	var (
 		output  string
 		deleted bool
@@ -68,15 +66,15 @@ func (d *DB) GetByID(id string) (*service.URL, error) {
 	}
 
 	if output != "" {
-		url := service.NewURL(output, id)
+		url := usecase.NewURL(output, id)
 		return url, nil
 	} else {
 		return nil, fmt.Errorf("key not found")
 	}
 }
 
-func (d *DB) GetUserURLs(userID string) ([]*service.URL, error) {
-	urls := make([]*service.URL, 0)
+func (d *DB) GetUserURLs(userID string) ([]*usecase.URL, error) {
+	urls := make([]*usecase.URL, 0)
 
 	rows, err := d.conn.Query("SELECT short, origin FROM public.urls WHERE user_id=$1", userID)
 	if err != nil {
@@ -85,7 +83,7 @@ func (d *DB) GetUserURLs(userID string) ([]*service.URL, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var url service.URL
+		var url usecase.URL
 		err = rows.Scan(&url.Short, &url.Origin)
 		if err != nil {
 			return nil, err
@@ -115,7 +113,7 @@ func (d *DB) Ping() error {
 	return nil
 }
 
-func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*service.URL) error {
+func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*usecase.URL) error {
 	tx, err := d.conn.Begin()
 	if err != nil {
 		return err
@@ -146,21 +144,47 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*ser
 	return tx.Commit()
 }
 
-func (d *DB) DeleteBatch(ctx context.Context, userID string, toDelete []string) error {
-	stmt, err := d.conn.PrepareContext(ctx,
-		"UPDATE public.urls SET deleted=true WHERE user_id=$1 AND short=any($2)")
+func (d *DB) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error {
+	tx, err := d.conn.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer tx.Rollback()
+
+	stmt, err := tx.PrepareContext(ctx,
+		"UPDATE public.urls SET deleted=true WHERE user_id=$1 AND short=$2")
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.ExecContext(ctx, userID, pq.Array(toDelete))
-	if err != nil {
-		return err
+	for _, url := range toDelete {
+		_, err = stmt.ExecContext(ctx, url.UserID, url.Short)
+		if err != nil {
+			log.Println(err.Error())
+			return err
+		}
 	}
 
-	return nil
+	return tx.Commit()
 }
+
+//func (d *DB) DeleteBatch(ctx context.Context, userID string, toDelete []string) error {
+//	stmt, err := d.conn.PrepareContext(ctx,
+//		"UPDATE public.urls SET deleted=true WHERE user_id=$1 AND short=any($2)")
+//	if err != nil {
+//		return err
+//	}
+//	defer stmt.Close()
+//
+//	_, err = stmt.ExecContext(ctx, userID, pq.Array(toDelete))
+//	if err != nil {
+//		return err
+//	}
+//
+//	return nil
+//}
 
 func (d *DB) init() {
 	_, err := d.conn.Exec(`CREATE TABLE IF NOT EXISTS public.users(

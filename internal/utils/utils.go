@@ -47,7 +47,7 @@ func GetUserIDFromCookie(CookieID string) string {
 	if hmac.Equal(hash, data[config.UserIDLen:]) {
 		return hex.EncodeToString(id)
 	} else {
-		log.Printf("UserID %d no auth", id)
+		log.Printf("UserID %v no auth", string(id))
 		return ""
 	}
 }

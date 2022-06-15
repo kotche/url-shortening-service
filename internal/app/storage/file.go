@@ -7,19 +7,19 @@ import (
 	"os"
 	"sync"
 
-	"github.com/kotche/url-shortening-service/internal/app/service"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 type FileStorage struct {
 	file      *os.File
 	encoder   *json.Encoder
-	urls      map[string]*service.URL
-	urlsUsers map[string][]*service.URL
+	urls      map[string]*usecase.URL
+	urlsUsers map[string][]*usecase.URL
 }
 
 type DataFile struct {
 	Owner string `json:"owner"`
-	*service.URL
+	*usecase.URL
 }
 
 func NewFileStorage(fileName string) (*FileStorage, error) {
@@ -28,8 +28,8 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 		return nil, err
 	}
 
-	urls := make(map[string]*service.URL)
-	urlsUsers := make(map[string][]*service.URL)
+	urls := make(map[string]*usecase.URL)
+	urlsUsers := make(map[string][]*usecase.URL)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -54,7 +54,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	}, nil
 }
 
-func (f *FileStorage) Add(userID string, url *service.URL) error {
+func (f *FileStorage) Add(userID string, url *usecase.URL) error {
 	mu := &sync.Mutex{}
 	mu.Lock()
 	defer mu.Unlock()
@@ -74,7 +74,7 @@ func (f *FileStorage) Add(userID string, url *service.URL) error {
 	return nil
 }
 
-func (f *FileStorage) GetByID(id string) (*service.URL, error) {
+func (f *FileStorage) GetByID(id string) (*usecase.URL, error) {
 	original, ok := f.urls[id]
 	if !ok {
 		return nil, fmt.Errorf("key not found")
@@ -83,7 +83,7 @@ func (f *FileStorage) GetByID(id string) (*service.URL, error) {
 	return original, nil
 }
 
-func (f *FileStorage) GetUserURLs(userID string) ([]*service.URL, error) {
+func (f *FileStorage) GetUserURLs(userID string) ([]*usecase.URL, error) {
 	usersURLs := f.urlsUsers[userID]
 	return usersURLs, nil
 }

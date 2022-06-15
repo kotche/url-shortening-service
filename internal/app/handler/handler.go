@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -223,7 +222,7 @@ func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	inputDataList := make([]service.InputCorrelationURL, 0)
+	inputDataList := make([]usecase.InputCorrelationURL, 0)
 	err = json.Unmarshal(body, &inputDataList)
 
 	if err != nil {
@@ -265,13 +264,9 @@ func (h *Handler) handleDeleteURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userID := r.Context().Value(config.UserIDCookieName).(string)
-	ctx := context.Background()
 
 	go func() {
-		err = h.service.DeleteURLs(ctx, userID, toDelete)
-		if err != nil {
-			log.Println(err.Error())
-		}
+		h.service.DeleteURLs(userID, toDelete)
 	}()
 
 	w.WriteHeader(http.StatusAccepted)

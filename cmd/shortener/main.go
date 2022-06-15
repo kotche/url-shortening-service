@@ -36,7 +36,7 @@ func main() {
 		defer func() {
 			err = Database.Close()
 			if err != nil {
-				log.Printf(err.Error())
+				log.Println(err.Error())
 			}
 		}()
 	} else if conf.FilePath != "" {
@@ -49,7 +49,7 @@ func main() {
 		defer func() {
 			err = URLStorage.Close()
 			if err != nil {
-				log.Printf(err.Error())
+				log.Println(err.Error())
 			}
 		}()
 	} else {

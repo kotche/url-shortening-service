@@ -8,6 +8,8 @@ const (
 	UserIDCookieName ContextType = "user_id"
 	CookieMaxAge                 = 86400
 	UserIDLen                    = 8
+	BufLen                       = 3
+	Timeout                      = 5
 )
 
 func GetSecretKey() []byte {

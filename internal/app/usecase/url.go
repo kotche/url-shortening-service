@@ -1,4 +1,4 @@
-package service
+package usecase
 
 type URL struct {
 	Short  string `json:"short_url"`
@@ -19,4 +19,9 @@ type InputCorrelationURL struct {
 type OutputCorrelationURL struct {
 	CorrelationID string `json:"correlation_id"`
 	Short         string `json:"short_url"`
+}
+
+type DeleteUserURLs struct {
+	UserID string
+	Short  string
 }

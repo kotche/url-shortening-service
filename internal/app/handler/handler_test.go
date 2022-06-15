@@ -11,6 +11,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
+	"github.com/kotche/url-shortening-service/internal/app/usecase"
 	"github.com/kotche/url-shortening-service/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -71,7 +72,7 @@ func TestHandler_handleGet(t *testing.T) {
 			URLStorage := storage.NewUrls()
 
 			if tt.fields.original != "" {
-				_ = URLStorage.Add(tt.fields.userID, service.NewURL(tt.fields.original, tt.fields.short))
+				_ = URLStorage.Add(tt.fields.userID, usecase.NewURL(tt.fields.original, tt.fields.short))
 			}
 
 			service := service.NewService(URLStorage)

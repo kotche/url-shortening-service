@@ -24,14 +24,18 @@ func main() {
 		serviceURL *service.Service
 	)
 
+	generator := service.Generator{}
+
 	if conf.DBConnect != "" {
 		Database, err = postgres.NewDB(conf.DBConnect)
 		if err != nil {
 			log.Fatal(err.Error())
 			return
 		}
-		serviceURL = service.NewService(Database)
+		serviceURL = service.NewService(Database, generator)
 		serviceURL.SetDB(Database)
+
+		serviceURL.RunWorker()
 
 		defer func() {
 			err = Database.Close()
@@ -45,7 +49,7 @@ func main() {
 			log.Fatal(err.Error())
 			return
 		}
-		serviceURL = service.NewService(URLStorage)
+		serviceURL = service.NewService(URLStorage, generator)
 		defer func() {
 			err = URLStorage.Close()
 			if err != nil {
@@ -54,9 +58,9 @@ func main() {
 		}()
 	} else {
 		URLStorage = storage.NewUrls()
-		serviceURL = service.NewService(URLStorage)
+		serviceURL = service.NewService(URLStorage, generator)
 	}
 
 	handlerObj := handler.NewHandler(serviceURL, conf)
-	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.GetRouter()))
+	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.Router))
 }

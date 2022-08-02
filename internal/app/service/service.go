@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
@@ -26,40 +25,39 @@ type Database interface {
 	DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error
 }
 
+type IGenerator interface {
+	MakeShortURL() string
+}
+
 type Service struct {
 	st           Storage
 	db           Database
+	gen          IGenerator
 	deletionChan chan usecase.DeleteUserURLs
 	buf          []usecase.DeleteUserURLs
 	timer        *time.Timer
 	isTimeout    bool
 }
 
-func NewService(st Storage) *Service {
+func NewService(st Storage, gen IGenerator) *Service {
 	s := Service{
 		st:           st,
+		gen:          gen,
 		deletionChan: make(chan usecase.DeleteUserURLs),
 		buf:          make([]usecase.DeleteUserURLs, 0, config.BufLen),
 		isTimeout:    true,
 		timer:        time.NewTimer(0),
 	}
 
-	go s.worker()
-
 	return &s
+}
+
+func (s *Service) RunWorker() {
+	go s.worker()
 }
 
 func (s *Service) SetDB(db Database) {
 	s.db = db
-}
-
-func (s *Service) MakeShortURL() string {
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, config.ShortURLLen)
-	for i := range b {
-		b[i] = symbols[rand.Intn(len(symbols))]
-	}
-	return string(b)
 }
 
 func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, error) {
@@ -67,7 +65,7 @@ func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, er
 	var urlModel *usecase.URL
 
 	for {
-		shortURL := s.MakeShortURL()
+		shortURL := s.gen.MakeShortURL()
 		urlModel, _ = s.st.GetByID(shortURL)
 
 		if urlModel == nil {
@@ -118,7 +116,7 @@ func (s *Service) ShortenBatch(ctx context.Context, userID string, input []useca
 		var urlModel *usecase.URL
 
 		for {
-			shortURL := s.MakeShortURL()
+			shortURL := s.gen.MakeShortURL()
 			if _, ok := urls[shortURL]; ok {
 				continue
 			}

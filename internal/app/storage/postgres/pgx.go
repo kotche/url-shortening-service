@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"log"
 
@@ -46,7 +45,7 @@ func (d *DB) Add(userID string, url *usecase.URL) error {
 	var output string
 	result.Scan(&output)
 	if output != url.Short {
-		return usecase.ConflictURLError{Err: errors.New("duplicate URL"), ShortenURL: output}
+		return usecase.ConflictURLError{ShortenURL: output}
 	}
 
 	return nil
@@ -62,7 +61,7 @@ func (d *DB) GetByID(id string) (*usecase.URL, error) {
 	row.Scan(&output, &deleted)
 
 	if deleted {
-		return nil, usecase.GoneError{Err: errors.New("URL gone"), ShortenURL: output}
+		return nil, usecase.GoneError{ShortenURL: output}
 	}
 
 	if output != "" {
@@ -169,22 +168,6 @@ func (d *DB) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs)
 
 	return tx.Commit()
 }
-
-//func (d *DB) DeleteBatch(ctx context.Context, userID string, toDelete []string) error {
-//	stmt, err := d.conn.PrepareContext(ctx,
-//		"UPDATE public.urls SET deleted=true WHERE user_id=$1 AND short=any($2)")
-//	if err != nil {
-//		return err
-//	}
-//	defer stmt.Close()
-//
-//	_, err = stmt.ExecContext(ctx, userID, pq.Array(toDelete))
-//	if err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
 
 func (d *DB) init() {
 	_, err := d.conn.Exec(`CREATE TABLE IF NOT EXISTS public.users(

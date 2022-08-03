@@ -5,11 +5,9 @@ import (
 	"log"
 	"time"
 
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
-
-const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type Storage interface {
 	Add(userID string, url *usecase.URL) error
@@ -32,17 +30,17 @@ type IGenerator interface {
 type Service struct {
 	st           Storage
 	db           Database
-	gen          IGenerator
+	Gen          IGenerator
 	deletionChan chan usecase.DeleteUserURLs
 	buf          []usecase.DeleteUserURLs
 	timer        *time.Timer
 	isTimeout    bool
 }
 
-func NewService(st Storage, gen IGenerator) *Service {
+func NewService(st Storage) *Service {
 	s := Service{
 		st:           st,
-		gen:          gen,
+		Gen:          usecase.Generator{},
 		deletionChan: make(chan usecase.DeleteUserURLs),
 		buf:          make([]usecase.DeleteUserURLs, 0, config.BufLen),
 		isTimeout:    true,
@@ -65,7 +63,7 @@ func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, er
 	var urlModel *usecase.URL
 
 	for {
-		shortURL := s.gen.MakeShortURL()
+		shortURL := s.Gen.MakeShortURL()
 		urlModel, _ = s.st.GetByID(shortURL)
 
 		if urlModel == nil {
@@ -116,7 +114,7 @@ func (s *Service) ShortenBatch(ctx context.Context, userID string, input []useca
 		var urlModel *usecase.URL
 
 		for {
-			shortURL := s.gen.MakeShortURL()
+			shortURL := s.Gen.MakeShortURL()
 			if _, ok := urls[shortURL]; ok {
 				continue
 			}

@@ -7,9 +7,8 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"time"
 
-	"github.com/kotche/url-shortening-service/internal/config"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 )
 
 func GetCookieParam(r *http.Request, name string) string {
@@ -23,7 +22,6 @@ func GetCookieParam(r *http.Request, name string) string {
 func MakeUserIDCookie() (string, string) {
 	userID := make([]byte, config.UserIDLen)
 
-	rand.Seed(time.Now().UnixNano())
 	rand.Read(userID)
 	encodedID := hex.EncodeToString(userID)
 

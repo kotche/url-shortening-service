@@ -6,13 +6,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
 
 type ICookieManager interface {
@@ -36,7 +37,7 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 		Service: service,
 		Router:  router,
 		Conf:    conf,
-		Cm:      CookieManager{},
+		Cm:      usecase.CookieManager{},
 	}
 
 	handler.setRouting()
@@ -52,6 +53,12 @@ func (h *Handler) setRouting() {
 	h.Router.Get("/ping", h.handlePing)
 	h.Router.Post("/api/shorten/batch", h.handlePostShortenBatch)
 	h.Router.Delete("/api/user/urls", h.handleDeleteURLs)
+
+	// Регистрация pprof-обработчиков
+	h.Router.HandleFunc("/debug/pprof/*", pprof.Index)
+	h.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	h.Router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	h.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +101,9 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	originURLReceiver := &struct {
 		OriginURL string `json:"url"`
 	}{}
+
+	var body []byte
+	r.Body.Read(body)
 
 	err := json.NewDecoder(r.Body).Decode(originURLReceiver)
 	if err != nil {

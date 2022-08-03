@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/kotche/url-shortening-service/internal/config"
-	"github.com/kotche/url-shortening-service/internal/utils"
+	"github.com/kotche/url-shortening-service/internal/app/config"
+	"github.com/kotche/url-shortening-service/internal/app/utils"
 )
 
 func UserCookieHandle(next http.Handler) http.Handler {

@@ -12,13 +12,13 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	mockService "github.com/kotche/url-shortening-service/internal/app/service/mock"
 	mockStorage "github.com/kotche/url-shortening-service/internal/app/storage/mock"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -95,7 +95,8 @@ func TestHandlerHandleGet(t *testing.T) {
 
 			repo.EXPECT().GetByID(tt.fields.id).Return(tt.fields.URL, tt.fields.err).Times(1)
 
-			s := service.NewService(repo, nil)
+			s := service.NewService(repo)
+			s.Gen = nil
 
 			h := NewHandler(s, conf)
 
@@ -183,7 +184,8 @@ func TestHandlerHandlePost(t *testing.T) {
 			generator := mockService.Generator{Short: tt.fields.short}
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
 
-			s := service.NewService(repo, generator)
+			s := service.NewService(repo)
+			s.Gen = generator
 			h := NewHandler(s, conf)
 			h.Cm = cm
 
@@ -297,7 +299,8 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 			generator := mockService.Generator{Short: tt.fields.short}
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
 
-			s := service.NewService(repo, generator)
+			s := service.NewService(repo)
+			s.Gen = generator
 			h := NewHandler(s, conf)
 			h.Cm = cm
 
@@ -466,7 +469,8 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			repo := mockStorage.NewMockStorage(control)
 			repo.EXPECT().GetUserURLs(tt.fields.userID).Return(tt.fields.urls, tt.fields.err).Times(1)
 
-			s := service.NewService(repo, nil)
+			s := service.NewService(repo)
+			s.Gen = nil
 
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
 			h := NewHandler(s, conf)
@@ -575,7 +579,9 @@ func TestGzipHandle(t *testing.T) {
 			cm := mockHandler.CookieManager{Cookie: "123"}
 
 			mock := test.NewFakeRepo("https://www.google.com", "qwertyT")
-			s := service.NewService(mock, generator)
+			s := service.NewService(mock)
+			s.Gen = generator
+
 			h := NewHandler(s, conf)
 			h.Cm = cm
 

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/kotche/url-shortening-service/internal/config"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 )
 
 type gzipWriter struct {

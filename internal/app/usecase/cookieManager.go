@@ -1,9 +1,9 @@
-package handler
+package usecase
 
 import (
 	"net/http"
 
-	"github.com/kotche/url-shortening-service/internal/config"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 )
 
 type CookieManager struct{}

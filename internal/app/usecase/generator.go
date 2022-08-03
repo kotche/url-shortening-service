@@ -1,11 +1,13 @@
-package service
+package usecase
 
 import (
 	"math/rand"
 	"time"
 
-	"github.com/kotche/url-shortening-service/internal/config"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 )
+
+const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type Generator struct{}
 

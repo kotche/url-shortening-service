@@ -2,16 +2,20 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/handler"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/postgres"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	conf, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -24,15 +28,13 @@ func main() {
 		serviceURL *service.Service
 	)
 
-	generator := service.Generator{}
-
 	if conf.DBConnect != "" {
 		Database, err = postgres.NewDB(conf.DBConnect)
 		if err != nil {
 			log.Fatal(err.Error())
 			return
 		}
-		serviceURL = service.NewService(Database, generator)
+		serviceURL = service.NewService(Database)
 		serviceURL.SetDB(Database)
 
 		serviceURL.RunWorker()
@@ -49,7 +51,7 @@ func main() {
 			log.Fatal(err.Error())
 			return
 		}
-		serviceURL = service.NewService(URLStorage, generator)
+		serviceURL = service.NewService(URLStorage)
 		defer func() {
 			err = URLStorage.Close()
 			if err != nil {
@@ -58,7 +60,7 @@ func main() {
 		}()
 	} else {
 		URLStorage = storage.NewUrls()
-		serviceURL = service.NewService(URLStorage, generator)
+		serviceURL = service.NewService(URLStorage)
 	}
 
 	handlerObj := handler.NewHandler(serviceURL, conf)

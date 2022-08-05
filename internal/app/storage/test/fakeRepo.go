@@ -1,24 +1,17 @@
 package test
 
 import (
+	"context"
+
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 type FakeRepo struct {
-	original string
-	short    string
-	err      bool
-}
-
-func NewFakeRepo(original, short string) *FakeRepo {
-	return &FakeRepo{
-		original: original,
-		short:    short,
-	}
+	Short string
 }
 
 func (f *FakeRepo) Add(userID string, url *usecase.URL) error {
-	url.Short = f.short
+	url.Short = f.Short
 	return nil
 }
 
@@ -31,5 +24,17 @@ func (f *FakeRepo) GetUserURLs(userID string) ([]*usecase.URL, error) {
 }
 
 func (f *FakeRepo) Close() error {
+	return nil
+}
+
+func (f *FakeRepo) Ping() error {
+	return nil
+}
+
+func (f *FakeRepo) WriteBatch(ctx context.Context, userID string, urls map[string]*usecase.URL) error {
+	return nil
+}
+
+func (f *FakeRepo) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error {
 	return nil
 }

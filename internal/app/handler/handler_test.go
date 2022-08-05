@@ -578,7 +578,7 @@ func TestGzipHandle(t *testing.T) {
 			generator := mockService.Generator{Short: "qwertyT"}
 			cm := mockHandler.CookieManager{Cookie: "123"}
 
-			mock := test.NewFakeRepo("https://www.google.com", "qwertyT")
+			mock := &test.FakeRepo{Short: "qwertyT"}
 			s := service.NewService(mock)
 			s.Gen = generator
 

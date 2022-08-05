@@ -108,7 +108,7 @@ func (s *Service) Ping() error {
 
 func (s *Service) ShortenBatch(ctx context.Context, userID string, input []usecase.InputCorrelationURL) ([]usecase.OutputCorrelationURL, error) {
 
-	output := make([]usecase.OutputCorrelationURL, 0)
+	output := make([]usecase.OutputCorrelationURL, 0, len(input))
 	urls := make(map[string]*usecase.URL)
 	for _, correlationURL := range input {
 		var urlModel *usecase.URL

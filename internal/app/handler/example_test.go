@@ -34,6 +34,7 @@ func ExampleHandler_HandlePost() {
 	h.Router.ServeHTTP(w, r)
 
 	response := w.Result()
+	defer response.Body.Close()
 	fmt.Println(response.StatusCode)
 
 	//Output:
@@ -64,6 +65,7 @@ func ExampleHandler_HandlePostJSON() {
 	h.Router.ServeHTTP(w, r)
 
 	response := w.Result()
+	defer response.Body.Close()
 	fmt.Println(response.StatusCode)
 
 	//Output:
@@ -93,6 +95,7 @@ func ExampleHandler_HandleGet() {
 	h.Router.ServeHTTP(w, r)
 
 	response := w.Result()
+	defer response.Body.Close()
 	fmt.Println(response.StatusCode)
 
 	//Output:

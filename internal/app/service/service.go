@@ -9,6 +9,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
+// Storage describes methods for storage in RAM , file system , and database
 type Storage interface {
 	Add(userID string, url *usecase.URL) error
 	GetByID(id string) (*usecase.URL, error)
@@ -16,6 +17,7 @@ type Storage interface {
 	Close() error
 }
 
+// Database describes methods for storage in database
 type Database interface {
 	Storage
 	Ping() error
@@ -23,6 +25,7 @@ type Database interface {
 	DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error
 }
 
+// IGenerator describes methods for generating shortened links
 type IGenerator interface {
 	MakeShortURL() string
 }

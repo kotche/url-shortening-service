@@ -16,6 +16,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
+// ICookieManager retrieves the user id from cookies
 type ICookieManager interface {
 	GetUserID(r *http.Request) string
 }
@@ -27,6 +28,7 @@ type Handler struct {
 	Cm      ICookieManager
 }
 
+// NewHandler constructor gets a handler instance
 func NewHandler(service *service.Service, conf *config.Config) *Handler {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
@@ -46,13 +48,13 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 }
 
 func (h *Handler) setRouting() {
-	h.Router.Get("/{id}", h.handleGet)
-	h.Router.Post("/", h.handlePost)
-	h.Router.Post("/api/shorten", h.handlePostJSON)
-	h.Router.Get("/api/user/urls", h.handleGetUserURLs)
-	h.Router.Get("/ping", h.handlePing)
-	h.Router.Post("/api/shorten/batch", h.handlePostShortenBatch)
-	h.Router.Delete("/api/user/urls", h.handleDeleteURLs)
+	h.Router.Get("/{id}", h.HandleGet)
+	h.Router.Post("/", h.HandlePost)
+	h.Router.Post("/api/shorten", h.HandlePostJSON)
+	h.Router.Get("/api/user/urls", h.HandleGetUserURLs)
+	h.Router.Get("/ping", h.HandlePing)
+	h.Router.Post("/api/shorten/batch", h.HandlePostShortenBatch)
+	h.Router.Delete("/api/user/urls", h.HandleDeleteURLs)
 
 	// Регистрация pprof-обработчиков
 	h.Router.HandleFunc("/debug/pprof/*", pprof.Index)
@@ -61,7 +63,8 @@ func (h *Handler) setRouting() {
 	h.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 }
 
-func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
+// HandlePost accepts the URL string in the request body and returns its abbreviated version. Content-Type: text/html
+func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	urlRead, err := io.ReadAll(r.Body)
 	if err != nil || len(urlRead) == 0 {
@@ -92,7 +95,8 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(h.Conf.BaseURL + "/" + shortenURL))
 }
 
-func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
+// HandlePostJSON accepts the URL string in the request body and returns its shortened version. Content-Type: application/json
+func (h *Handler) HandlePostJSON(w http.ResponseWriter, r *http.Request) {
 	if r.Header.Get("Content-Type") != "application/json" {
 		http.Error(w, "Invalid content type", http.StatusBadRequest)
 		return
@@ -154,7 +158,8 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(response)
 }
 
-func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
+// HandleGet gets the original URL from a shortened link
+func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
 	url, err := h.Service.GetURLModelByID(shortURL)
@@ -170,7 +175,8 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
+//HandleGetUserURLs gets all shortened links by the user
+func (h *Handler) HandleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	userID := h.Cm.GetUserID(r)
 
@@ -215,7 +221,8 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 	w.Write(userUrlsJSON)
 }
 
-func (h *Handler) handlePing(w http.ResponseWriter, _ *http.Request) {
+//HandlePing checks the availability of the database
+func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
 	err := h.Service.Ping()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -224,7 +231,15 @@ func (h *Handler) handlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
+// HandlePostShortenBatch accepts in the request body a set of URLs for abbreviation in the format:
+//[
+//{
+//"correlation_id": "<string identifier>",
+//"original_url": "<URL for abbreviation>"
+//},
+//...
+//]
+func (h *Handler) HandlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil || len(body) == 0 {
@@ -260,7 +275,9 @@ func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request)
 	_, _ = w.Write(correlationURLs)
 }
 
-func (h *Handler) handleDeleteURLs(w http.ResponseWriter, r *http.Request) {
+// HandleDeleteURLs accepts a list of shortened URL to delete in the format:
+//[ "a", "b", "c", "d", ...]
+func (h *Handler) HandleDeleteURLs(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)
 	if err != nil || len(body) == 0 {

@@ -8,6 +8,7 @@ import (
 
 type CookieManager struct{}
 
+// GetUserID returns the user ID from the cookie
 func (c CookieManager) GetUserID(r *http.Request) string {
 	return r.Context().Value(config.UserIDCookieName).(string)
 }

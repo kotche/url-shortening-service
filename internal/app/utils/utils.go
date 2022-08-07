@@ -11,6 +11,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/config"
 )
 
+// GetCookieParam returns the cookie parameter by name
 func GetCookieParam(r *http.Request, name string) string {
 	cookieParam, err := r.Cookie(name)
 	if err != nil {
@@ -19,6 +20,7 @@ func GetCookieParam(r *http.Request, name string) string {
 	return cookieParam.Value
 }
 
+// MakeUserIDCookie generates an encrypted user id for cookies
 func MakeUserIDCookie() (string, string) {
 	userID := make([]byte, config.UserIDLen)
 
@@ -31,6 +33,7 @@ func MakeUserIDCookie() (string, string) {
 	return encodedID, encodedID + hex.EncodeToString(hash)
 }
 
+// GetUserIDFromCookie receives an encrypted user id from the cookie
 func GetUserIDFromCookie(CookieID string) string {
 	data, err := hex.DecodeString(CookieID)
 	if err != nil {

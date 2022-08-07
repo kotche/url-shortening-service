@@ -6,6 +6,7 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
+//URLStorage store the URL in RAM
 type URLStorage struct {
 	urls      map[string]*usecase.URL
 	urlsUsers map[string][]*usecase.URL

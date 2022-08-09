@@ -17,6 +17,7 @@ type FileStorage struct {
 	urlsUsers map[string][]*usecase.URL
 }
 
+// DataFile store the URL in the file system
 type DataFile struct {
 	Owner string `json:"owner"`
 	*usecase.URL

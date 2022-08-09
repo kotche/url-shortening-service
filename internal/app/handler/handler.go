@@ -6,23 +6,25 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/pprof"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
 
-type Handler struct {
-	service *service.Service
-	router  *chi.Mux
-	conf    *config.Config
+type ICookieManager interface {
+	GetUserID(r *http.Request) string
 }
 
-func (h *Handler) GetRouter() *chi.Mux {
-	return h.router
+type Handler struct {
+	Service *service.Service
+	Router  *chi.Mux
+	Conf    *config.Config
+	Cm      ICookieManager
 }
 
 func NewHandler(service *service.Service, conf *config.Config) *Handler {
@@ -32,9 +34,10 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 	router.Use(middlewares.UserCookieHandle)
 
 	handler := &Handler{
-		service: service,
-		router:  router,
-		conf:    conf,
+		Service: service,
+		Router:  router,
+		Conf:    conf,
+		Cm:      usecase.CookieManager{},
 	}
 
 	handler.setRouting()
@@ -43,13 +46,19 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 }
 
 func (h *Handler) setRouting() {
-	h.router.Get("/{id}", h.handleGet)
-	h.router.Post("/", h.handlePost)
-	h.router.Post("/api/shorten", h.handlePostJSON)
-	h.router.Get("/api/user/urls", h.handleGetUserURLs)
-	h.router.Get("/ping", h.handlePing)
-	h.router.Post("/api/shorten/batch", h.handlePostShortenBatch)
-	h.router.Delete("/api/user/urls", h.handleDeleteURLs)
+	h.Router.Get("/{id}", h.handleGet)
+	h.Router.Post("/", h.handlePost)
+	h.Router.Post("/api/shorten", h.handlePostJSON)
+	h.Router.Get("/api/user/urls", h.handleGetUserURLs)
+	h.Router.Get("/ping", h.handlePing)
+	h.Router.Post("/api/shorten/batch", h.handlePostShortenBatch)
+	h.Router.Delete("/api/user/urls", h.handleDeleteURLs)
+
+	// Регистрация pprof-обработчиков
+	h.Router.HandleFunc("/debug/pprof/*", pprof.Index)
+	h.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	h.Router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	h.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
 }
 
 func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
@@ -61,12 +70,12 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	originURL := string(urlRead)
-	userID := r.Context().Value(config.UserIDCookieName).(string)
+	userID := h.Cm.GetUserID(r)
 
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.service.GetURLModel(userID, originURL)
+	urlModel, err := h.Service.GetURLModel(userID, originURL)
 
 	if errors.As(err, &usecase.ConflictURLError{}) {
 		e := err.(usecase.ConflictURLError)
@@ -80,7 +89,7 @@ func (h *Handler) handlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
-	w.Write([]byte(h.conf.BaseURL + "/" + shortenURL))
+	_, _ = w.Write([]byte(h.Conf.BaseURL + "/" + shortenURL))
 }
 
 func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
@@ -92,6 +101,9 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	originURLReceiver := &struct {
 		OriginURL string `json:"url"`
 	}{}
+
+	var body []byte
+	r.Body.Read(body)
 
 	err := json.NewDecoder(r.Body).Decode(originURLReceiver)
 	if err != nil {
@@ -108,12 +120,12 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	userID := r.Context().Value(config.UserIDCookieName).(string)
+	userID := h.Cm.GetUserID(r)
 
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.service.GetURLModel(userID, originURL)
+	urlModel, err := h.Service.GetURLModel(userID, originURL)
 
 	if errors.As(err, &usecase.ConflictURLError{}) {
 		e := err.(usecase.ConflictURLError)
@@ -129,7 +141,7 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	shortURLSender := &struct {
 		ShortURL string `json:"result"`
 	}{
-		ShortURL: h.conf.BaseURL + "/" + shortenURL,
+		ShortURL: h.Conf.BaseURL + "/" + shortenURL,
 	}
 
 	response, err := json.Marshal(shortURLSender)
@@ -139,20 +151,19 @@ func (h *Handler) handlePostJSON(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(status)
-	w.Write(response)
+	_, _ = w.Write(response)
 }
 
 func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
-	url, err := h.service.GetURLModelByID(shortURL)
+	url, err := h.Service.GetURLModelByID(shortURL)
 
 	if errors.As(err, &usecase.GoneError{}) {
 		w.WriteHeader(http.StatusGone)
 		return
 	} else if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
 		return
 	}
 	w.Header().Set("Location", url.Origin)
@@ -161,17 +172,16 @@ func (h *Handler) handleGet(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
-	userID := r.Context().Value(config.UserIDCookieName).(string)
+	userID := h.Cm.GetUserID(r)
 
 	if userID == "" {
 		http.Error(w, "user ID is empty", http.StatusInternalServerError)
 		return
 	}
 
-	userUrls, err := h.service.GetUserURLs(userID)
+	userUrls, err := h.Service.GetUserURLs(userID)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -189,7 +199,7 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 	for _, v := range userUrls {
 		p := Output{
-			ShortURL:    h.conf.BaseURL + "/" + v.Short,
+			ShortURL:    h.Conf.BaseURL + "/" + v.Short,
 			OriginalURL: v.Origin,
 		}
 		outputList = append(outputList, p)
@@ -205,8 +215,8 @@ func (h *Handler) handleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 	w.Write(userUrlsJSON)
 }
 
-func (h *Handler) handlePing(w http.ResponseWriter, r *http.Request) {
-	err := h.service.Ping()
+func (h *Handler) handlePing(w http.ResponseWriter, _ *http.Request) {
+	err := h.Service.Ping()
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -230,24 +240,24 @@ func (h *Handler) handlePostShortenBatch(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID := r.Context().Value(config.UserIDCookieName).(string)
+	userID := h.Cm.GetUserID(r)
 
 	ctx := context.Background()
 
-	outputDataList, err := h.service.ShortenBatch(ctx, userID, inputDataList)
+	outputDataList, err := h.Service.ShortenBatch(ctx, userID, inputDataList)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	for ind := range outputDataList {
-		outputDataList[ind].Short = h.conf.BaseURL + "/" + outputDataList[ind].Short
+		outputDataList[ind].Short = h.Conf.BaseURL + "/" + outputDataList[ind].Short
 	}
 
 	correlationURLs, _ := json.Marshal(outputDataList)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	w.Write(correlationURLs)
+	_, _ = w.Write(correlationURLs)
 }
 
 func (h *Handler) handleDeleteURLs(w http.ResponseWriter, r *http.Request) {
@@ -263,10 +273,10 @@ func (h *Handler) handleDeleteURLs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	userID := r.Context().Value(config.UserIDCookieName).(string)
+	userID := h.Cm.GetUserID(r)
 
 	go func() {
-		h.service.DeleteURLs(userID, toDelete)
+		h.Service.DeleteURLs(userID, toDelete)
 	}()
 
 	w.WriteHeader(http.StatusAccepted)

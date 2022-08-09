@@ -3,7 +3,6 @@ package usecase
 import "fmt"
 
 type ConflictURLError struct {
-	Err        error
 	ShortenURL string
 }
 
@@ -12,7 +11,6 @@ func (e ConflictURLError) Error() string {
 }
 
 type GoneError struct {
-	Err        error
 	ShortenURL string
 }
 

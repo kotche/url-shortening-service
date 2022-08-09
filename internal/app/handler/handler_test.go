@@ -3,34 +3,39 @@ package handler
 import (
 	"bytes"
 	"compress/gzip"
+	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/golang/mock/gomock"
+	"github.com/kotche/url-shortening-service/internal/app/config"
+	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
 	"github.com/kotche/url-shortening-service/internal/app/service"
-	"github.com/kotche/url-shortening-service/internal/app/storage"
+	mockService "github.com/kotche/url-shortening-service/internal/app/service/mock"
+	mockStorage "github.com/kotche/url-shortening-service/internal/app/storage/mock"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
-func TestHandler_handleGet(t *testing.T) {
+func TestHandlerHandleGet(t *testing.T) {
 
 	conf, _ := config.NewConfig()
 
 	type want struct {
-		code     int
+		status   int
 		location string
-		body     string
 	}
 
 	type fields struct {
-		userID   string
-		original string
-		short    string
+		id       string
+		URL      *usecase.URL
+		endpoint string
+		err      error
 	}
 
 	tests := []struct {
@@ -39,66 +44,78 @@ func TestHandler_handleGet(t *testing.T) {
 		want   want
 	}{
 		{
-			name: "url exists",
+			name: "url_exists",
 			fields: fields{
-				short:    "qwertyT",
-				original: "www.yandex.ru",
-				userID:   "111",
+				URL:      &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				endpoint: "/qwertyT",
+				id:       "qwertyT",
 			},
 			want: want{
-				code:     http.StatusTemporaryRedirect,
+				status:   http.StatusTemporaryRedirect,
 				location: "www.yandex.ru",
-				body:     "",
 			},
 		},
 		{
-			name: "url not exists",
+			name: "url_not_exists",
 			fields: fields{
-				short:    "qwertyT",
-				original: "",
-				userID:   "111",
+				URL:      nil,
+				endpoint: "/qwertyT",
+				id:       "qwertyT",
+				err:      errors.New("key not found"),
 			},
 			want: want{
-				code:     http.StatusBadRequest,
+				status:   http.StatusBadRequest,
 				location: "",
-				body:     "key not found",
+			},
+		},
+		{
+			name: "url_gone",
+			fields: fields{
+				URL:      nil,
+				endpoint: "/qwertyT",
+				id:       "qwertyT",
+				err:      usecase.GoneError{},
+			},
+			want: want{
+				status:   http.StatusGone,
+				location: "",
 			},
 		},
 	}
 
+	t.Parallel()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			URLStorage := storage.NewUrls()
+			control := gomock.NewController(t)
+			defer control.Finish()
 
-			if tt.fields.original != "" {
-				_ = URLStorage.Add(tt.fields.userID, usecase.NewURL(tt.fields.original, tt.fields.short))
-			}
+			repo := mockStorage.NewMockStorage(control)
 
-			service := service.NewService(URLStorage)
+			repo.EXPECT().GetByID(tt.fields.id).Return(tt.fields.URL, tt.fields.err).Times(1)
 
-			h := NewHandler(service, conf)
+			s := service.NewService(repo)
+			s.Gen = nil
 
-			r := httptest.NewRequest(http.MethodGet, "/"+tt.fields.short, nil)
+			h := NewHandler(s, conf)
+
+			r := httptest.NewRequest(http.MethodGet, tt.fields.endpoint, nil)
 			w := httptest.NewRecorder()
 
-			h.GetRouter().ServeHTTP(w, r)
+			h.Router.ServeHTTP(w, r)
 
 			response := w.Result()
+			defer response.Body.Close()
 
-			assert.Equal(t, tt.want.code, response.StatusCode)
+			assert.Equal(t, tt.want.status, response.StatusCode)
 			assert.Equal(t, tt.want.location, response.Header.Get("Location"))
-
-			err := response.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.want.body, w.Body.String())
 
 		})
 	}
 }
 
-func TestHandler_handlePost(t *testing.T) {
+func TestHandlerHandlePost(t *testing.T) {
 
 	conf, _ := config.NewConfig()
 
@@ -108,9 +125,12 @@ func TestHandler_handlePost(t *testing.T) {
 	}
 
 	type fields struct {
-		original string
-		short    string
-		userID   string
+		userID string
+		short  string
+		origin string
+		URLAdd *usecase.URL
+		URLGet *usecase.URL
+		err    error
 	}
 
 	tests := []struct {
@@ -119,10 +139,13 @@ func TestHandler_handlePost(t *testing.T) {
 		want   want
 	}{
 		{
-			name: "new url",
+			name: "new_url",
 			fields: fields{
-				original: "www.yandex.ru",
-				short:    "qwertyT",
+				URLAdd: &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				URLGet: nil,
+				short:  "qwertyT",
+				origin: "www.yandex.ru",
+				userID: "123",
 			},
 			want: want{
 				code: http.StatusCreated,
@@ -130,46 +153,78 @@ func TestHandler_handlePost(t *testing.T) {
 			},
 		},
 		{
-			name: "empty body",
+			name: "conflict_url",
 			fields: fields{
-				original: "",
-				short:    "qwertyT",
-				userID:   "111",
+				URLAdd: &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				URLGet: nil,
+				err:    usecase.ConflictURLError{ShortenURL: "qwertyT"},
+				short:  "qwertyT",
+				origin: "www.yandex.ru",
+				userID: "123",
 			},
 			want: want{
-				code: http.StatusBadRequest,
-				body: "",
+				code: http.StatusConflict,
+				body: "http://localhost:8080/qwertyT",
 			},
 		},
 	}
 
+	t.Parallel()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			mock := test.NewMock(tt.fields.original, tt.fields.short)
-			service := service.NewService(mock)
+			control := gomock.NewController(t)
+			defer control.Finish()
 
-			h := NewHandler(service, conf)
+			repo := mockStorage.NewMockStorage(control)
+			repo.EXPECT().Add(tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
+			repo.EXPECT().GetByID(tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
 
-			body := bytes.NewBufferString(tt.fields.original)
+			generator := mockService.Generator{Short: tt.fields.short}
+			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
+
+			s := service.NewService(repo)
+			s.Gen = generator
+			h := NewHandler(s, conf)
+			h.Cm = cm
+
+			body := bytes.NewBufferString(tt.fields.origin)
 
 			r := httptest.NewRequest(http.MethodPost, "/", body)
 			w := httptest.NewRecorder()
 
-			h.GetRouter().ServeHTTP(w, r)
+			h.Router.ServeHTTP(w, r)
 
 			response := w.Result()
+			defer response.Body.Close()
 
 			assert.Equal(t, tt.want.code, response.StatusCode)
 			assert.Equal(t, tt.want.body, w.Body.String())
-
-			err := response.Body.Close()
-			require.NoError(t, err)
 		})
 	}
 }
 
-func TestHandler_handlePostJSON(t *testing.T) {
+func TestHandlerHandlePostEmptyBody(t *testing.T) {
+
+	h := NewHandler(nil, nil)
+
+	body := bytes.NewBufferString("")
+
+	r := httptest.NewRequest(http.MethodPost, "/", body)
+	w := httptest.NewRecorder()
+
+	h.Router.ServeHTTP(w, r)
+
+	response := w.Result()
+	defer response.Body.Close()
+
+	assert.Equal(t, http.StatusBadRequest, response.StatusCode)
+	assert.Equal(t, "", w.Body.String())
+
+}
+
+func TestHandlerHandlePostJSON(t *testing.T) {
 
 	conf, _ := config.NewConfig()
 
@@ -179,12 +234,14 @@ func TestHandler_handlePostJSON(t *testing.T) {
 	}
 
 	type fields struct {
-		body        string
-		originURL   string
-		shortURL    string
-		contentType string
-		compareBody bool
 		userID      string
+		short       string
+		origin      string
+		URLAdd      *usecase.URL
+		URLGet      *usecase.URL
+		body        string
+		err         error
+		contentType string
 	}
 
 	tests := []struct {
@@ -193,13 +250,15 @@ func TestHandler_handlePostJSON(t *testing.T) {
 		want   want
 	}{
 		{
-			name: "new url correct",
+			name: "new_url_correct",
 			fields: fields{
-				body:        `{"url":"https://www.google.com"}`,
-				originURL:   "https://www.google.com",
-				shortURL:    "qwertyT",
+				body:        `{"url":"www.google.com"}`,
+				origin:      "www.google.com",
+				short:       "qwertyT",
+				URLAdd:      &usecase.URL{Origin: "www.google.com", Short: "qwertyT"},
+				URLGet:      nil,
+				userID:      "123",
 				contentType: "application/json",
-				compareBody: true,
 			},
 			want: want{
 				code: http.StatusCreated,
@@ -207,56 +266,43 @@ func TestHandler_handlePostJSON(t *testing.T) {
 			},
 		},
 		{
-			name: "empty origin url",
+			name: "conflict_url",
 			fields: fields{
-				body:        `{"url":""}`,
-				originURL:   "",
-				shortURL:    "qwertyT",
+				body:        `{"url":"www.google.com"}`,
+				origin:      "www.google.com",
+				short:       "qwertyT",
+				URLAdd:      &usecase.URL{Origin: "www.google.com", Short: "qwertyT"},
+				URLGet:      nil,
+				err:         usecase.ConflictURLError{ShortenURL: "qwertyT"},
+				userID:      "123",
 				contentType: "application/json",
-				compareBody: true,
 			},
 			want: want{
-				code: http.StatusBadRequest,
-				body: "URL is empty",
-			},
-		},
-		{
-			name: "another content type",
-			fields: fields{
-				body:        `{"url":"https://www.google.com"}`,
-				originURL:   "https://www.google.com",
-				shortURL:    "qwertyT",
-				contentType: "text/plain",
-				compareBody: true,
-			},
-			want: want{
-				code: http.StatusBadRequest,
-				body: "Invalid content type",
-			},
-		},
-		{
-			name: "wrong JSON in body",
-			fields: fields{
-				body:        `{"url:"https://www.google.com"}`,
-				originURL:   "https://www.google.com",
-				shortURL:    "qwertyT",
-				contentType: "application/json",
-				compareBody: false,
-			},
-			want: want{
-				code: http.StatusBadRequest,
-				body: "",
+				code: http.StatusConflict,
+				body: `{"result":"http://localhost:8080/qwertyT"}`,
 			},
 		},
 	}
 
+	t.Parallel()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			mock := test.NewMock(tt.fields.originURL, tt.fields.shortURL)
+			control := gomock.NewController(t)
+			defer control.Finish()
 
-			service := service.NewService(mock)
-			h := NewHandler(service, conf)
+			repo := mockStorage.NewMockStorage(control)
+			repo.EXPECT().Add(tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
+			repo.EXPECT().GetByID(tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
+
+			generator := mockService.Generator{Short: tt.fields.short}
+			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
+
+			s := service.NewService(repo)
+			s.Gen = generator
+			h := NewHandler(s, conf)
+			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -264,18 +310,187 @@ func TestHandler_handlePostJSON(t *testing.T) {
 			r.Header.Set("Content-Type", tt.fields.contentType)
 			w := httptest.NewRecorder()
 
-			h.GetRouter().ServeHTTP(w, r)
+			h.Router.ServeHTTP(w, r)
 
 			response := w.Result()
+			defer response.Body.Close()
 
 			assert.Equal(t, tt.want.code, response.StatusCode)
+			assert.Equal(t, tt.want.body, strings.Trim(w.Body.String(), "\n"))
+		})
+	}
+}
 
-			if tt.fields.compareBody {
-				assert.Equal(t, tt.want.body, strings.Trim(w.Body.String(), "\n"))
-			}
+func TestHandlerHandlePostJSONBadRequest(t *testing.T) {
 
-			err := response.Body.Close()
-			require.NoError(t, err)
+	conf, _ := config.NewConfig()
+
+	type want struct {
+		code int
+	}
+
+	type fields struct {
+		userID      string
+		short       string
+		origin      string
+		body        string
+		contentType string
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   want
+	}{
+		{
+			name: "empty_origin_url",
+			fields: fields{
+				body:        `{"url":""}`,
+				origin:      "",
+				short:       "qwertyT",
+				contentType: "application/json",
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "another_content_type",
+			fields: fields{
+				body:        `{"url":"https://www.google.com"}`,
+				origin:      "https://www.google.com",
+				short:       "qwertyT",
+				contentType: "text/plain",
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+		{
+			name: "wrong_JSON_in_body",
+			fields: fields{
+				body:        `{"url:"https://www.google.com"}`,
+				origin:      "https://www.google.com",
+				short:       "qwertyT",
+				contentType: "application/json",
+			},
+			want: want{
+				code: http.StatusBadRequest,
+			},
+		},
+	}
+
+	t.Parallel()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			control := gomock.NewController(t)
+			defer control.Finish()
+
+			h := NewHandler(nil, conf)
+
+			body := bytes.NewBufferString(tt.fields.body)
+
+			r := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
+			r.Header.Set("Content-Type", tt.fields.contentType)
+			w := httptest.NewRecorder()
+
+			h.Router.ServeHTTP(w, r)
+
+			response := w.Result()
+			defer response.Body.Close()
+
+			assert.Equal(t, tt.want.code, response.StatusCode)
+		})
+	}
+}
+
+func TestHandlerHandleGetURLs(t *testing.T) {
+
+	conf, _ := config.NewConfig()
+
+	type want struct {
+		status int
+		urls   []*usecase.URL
+	}
+
+	type fields struct {
+		userID string
+		urls   []*usecase.URL
+		err    error
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   want
+	}{
+		{
+			name: "correct_get_urls",
+			fields: fields{
+				userID: "123",
+				urls: []*usecase.URL{
+					{Short: "111", Origin: "www.yandex.ru"},
+					{Short: "222", Origin: "www.google.com"},
+				},
+			},
+			want: want{
+				status: http.StatusOK,
+				urls: []*usecase.URL{
+					{Short: "http://localhost:8080/111", Origin: "www.yandex.ru"},
+					{Short: "http://localhost:8080/222", Origin: "www.google.com"},
+				},
+			},
+		},
+		{
+			name: "db_error",
+			fields: fields{
+				userID: "123",
+				err:    errors.New("bd error"),
+				urls: []*usecase.URL{
+					{Short: "111", Origin: "www.yandex.ru"},
+					{Short: "222", Origin: "www.google.com"},
+				},
+			},
+			want: want{
+				status: http.StatusInternalServerError,
+				urls:   []*usecase.URL{},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			control := gomock.NewController(t)
+			defer control.Finish()
+
+			repo := mockStorage.NewMockStorage(control)
+			repo.EXPECT().GetUserURLs(tt.fields.userID).Return(tt.fields.urls, tt.fields.err).Times(1)
+
+			s := service.NewService(repo)
+			s.Gen = nil
+
+			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
+			h := NewHandler(s, conf)
+			h.Cm = cm
+
+			r := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
+			w := httptest.NewRecorder()
+
+			h.Router.ServeHTTP(w, r)
+
+			response := w.Result()
+			defer response.Body.Close()
+
+			body, _ := io.ReadAll(response.Body)
+
+			URLResponse := []*usecase.URL{}
+			_ = json.Unmarshal(body, &URLResponse)
+
+			assert.Equal(t, tt.want.status, response.StatusCode)
+			assert.EqualValues(t, tt.want.urls, URLResponse)
 		})
 	}
 }
@@ -305,7 +520,7 @@ func TestGzipHandle(t *testing.T) {
 		want   want
 	}{
 		{
-			name: "compress/decompress ok",
+			name: "compress_decompress_ok",
 			fields: fields{
 				compressRequest:    true,
 				decompressResponse: true,
@@ -319,7 +534,7 @@ func TestGzipHandle(t *testing.T) {
 			},
 		},
 		{
-			name: "no compress",
+			name: "no_compress",
 			fields: fields{
 				compressRequest:    false,
 				decompressResponse: false,
@@ -330,7 +545,7 @@ func TestGzipHandle(t *testing.T) {
 			},
 		},
 		{
-			name: "bad compress header",
+			name: "bad_compress_header",
 			fields: fields{
 				compressRequest:    true,
 				decompressResponse: false,
@@ -343,7 +558,7 @@ func TestGzipHandle(t *testing.T) {
 			},
 		},
 		{
-			name: "bad compress body request",
+			name: "bad_compress_body_request",
 			fields: fields{
 				compressRequest:    false,
 				decompressResponse: false,
@@ -360,9 +575,15 @@ func TestGzipHandle(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			mock := test.NewMock("https://www.yandex.com", "qwertyT")
-			service := service.NewService(mock)
-			h := NewHandler(service, conf)
+			generator := mockService.Generator{Short: "qwertyT"}
+			cm := mockHandler.CookieManager{Cookie: "123"}
+
+			mock := &test.FakeRepo{Short: "qwertyT"}
+			s := service.NewService(mock)
+			s.Gen = generator
+
+			h := NewHandler(s, conf)
+			h.Cm = cm
 
 			data := []byte(`{"url":"https://www.google.com"}`)
 
@@ -384,8 +605,9 @@ func TestGzipHandle(t *testing.T) {
 			}
 
 			w := httptest.NewRecorder()
-			h.GetRouter().ServeHTTP(w, r)
+			h.Router.ServeHTTP(w, r)
 			response := w.Result()
+			defer response.Body.Close()
 
 			assert.Equal(t, tt.want.code, response.StatusCode)
 
@@ -400,9 +622,6 @@ func TestGzipHandle(t *testing.T) {
 					t.Error("response body does not match")
 				}
 			}
-
-			err := response.Body.Close()
-			require.NoError(t, err)
 		})
 	}
 }

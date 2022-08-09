@@ -2,16 +2,20 @@ package main
 
 import (
 	"log"
+	"math/rand"
 	"net/http"
+	"time"
 
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/handler"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/postgres"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
 
 func main() {
+	rand.Seed(time.Now().UnixNano())
+
 	conf, err := config.NewConfig()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -32,6 +36,8 @@ func main() {
 		}
 		serviceURL = service.NewService(Database)
 		serviceURL.SetDB(Database)
+
+		serviceURL.RunWorker()
 
 		defer func() {
 			err = Database.Close()
@@ -58,5 +64,5 @@ func main() {
 	}
 
 	handlerObj := handler.NewHandler(serviceURL, conf)
-	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.GetRouter()))
+	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.Router))
 }

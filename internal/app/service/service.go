@@ -3,14 +3,11 @@ package service
 import (
 	"context"
 	"log"
-	"math/rand"
 	"time"
 
+	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/usecase"
-	"github.com/kotche/url-shortening-service/internal/config"
 )
-
-const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 type Storage interface {
 	Add(userID string, url *usecase.URL) error
@@ -26,9 +23,14 @@ type Database interface {
 	DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error
 }
 
+type IGenerator interface {
+	MakeShortURL() string
+}
+
 type Service struct {
 	st           Storage
 	db           Database
+	Gen          IGenerator
 	deletionChan chan usecase.DeleteUserURLs
 	buf          []usecase.DeleteUserURLs
 	timer        *time.Timer
@@ -38,28 +40,22 @@ type Service struct {
 func NewService(st Storage) *Service {
 	s := Service{
 		st:           st,
+		Gen:          usecase.Generator{},
 		deletionChan: make(chan usecase.DeleteUserURLs),
 		buf:          make([]usecase.DeleteUserURLs, 0, config.BufLen),
 		isTimeout:    true,
 		timer:        time.NewTimer(0),
 	}
 
-	go s.worker()
-
 	return &s
+}
+
+func (s *Service) RunWorker() {
+	go s.worker()
 }
 
 func (s *Service) SetDB(db Database) {
 	s.db = db
-}
-
-func (s *Service) MakeShortURL() string {
-	rand.Seed(time.Now().UnixNano())
-	b := make([]byte, config.ShortURLLen)
-	for i := range b {
-		b[i] = symbols[rand.Intn(len(symbols))]
-	}
-	return string(b)
 }
 
 func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, error) {
@@ -67,7 +63,7 @@ func (s *Service) GetURLModel(userID string, originURL string) (*usecase.URL, er
 	var urlModel *usecase.URL
 
 	for {
-		shortURL := s.MakeShortURL()
+		shortURL := s.Gen.MakeShortURL()
 		urlModel, _ = s.st.GetByID(shortURL)
 
 		if urlModel == nil {
@@ -112,13 +108,13 @@ func (s *Service) Ping() error {
 
 func (s *Service) ShortenBatch(ctx context.Context, userID string, input []usecase.InputCorrelationURL) ([]usecase.OutputCorrelationURL, error) {
 
-	output := make([]usecase.OutputCorrelationURL, 0)
+	output := make([]usecase.OutputCorrelationURL, 0, len(input))
 	urls := make(map[string]*usecase.URL)
 	for _, correlationURL := range input {
 		var urlModel *usecase.URL
 
 		for {
-			shortURL := s.MakeShortURL()
+			shortURL := s.Gen.MakeShortURL()
 			if _, ok := urls[shortURL]; ok {
 				continue
 			}

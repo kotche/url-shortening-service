@@ -330,7 +330,6 @@ func TestHandlerHandlePostJSONBadRequest(t *testing.T) {
 	}
 
 	type fields struct {
-		userID      string
 		short       string
 		origin      string
 		body        string

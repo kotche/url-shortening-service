@@ -9,6 +9,7 @@ import (
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/handler"
+	"github.com/kotche/url-shortening-service/internal/app/server"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/postgres"
@@ -74,7 +75,11 @@ func main() {
 	}
 
 	handlerObj := handler.NewHandler(serviceURL, conf)
-	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.Router))
+	srv := server.NewServer(conf, handlerObj.Router)
+
+	if err = srv.Run(); err != nil && err != http.ErrServerClosed {
+		log.Fatal(err)
+	}
 }
 
 // example: go run -ldflags "-X main.buildVersion=v1.0 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" main.go

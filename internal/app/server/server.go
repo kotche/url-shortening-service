@@ -4,11 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 const (
@@ -27,15 +25,15 @@ func NewServer(cfg *config.Config, handler http.Handler) *Server {
 
 	var TLSConfig *tls.Config
 
-	if cfg.EnableHTTPS {
-		manager := &autocert.Manager{
-			Cache:      autocert.DirCache(cacheDir),
-			Prompt:     autocert.AcceptTOS,
-			HostPolicy: autocert.HostWhitelist(strings.Join(cfg.HostWhitelist, ",")),
-		}
-
-		TLSConfig = manager.TLSConfig()
-	}
+	//if cfg.EnableHTTPS {
+	//	manager := &autocert.Manager{
+	//		Cache:      autocert.DirCache(cacheDir),
+	//		Prompt:     autocert.AcceptTOS,
+	//		HostPolicy: autocert.HostWhitelist(strings.Join(cfg.HostWhitelist, ",")),
+	//	}
+	//
+	//	TLSConfig = manager.TLSConfig()
+	//}
 
 	return &Server{
 		cfg: cfg,
@@ -51,9 +49,9 @@ func NewServer(cfg *config.Config, handler http.Handler) *Server {
 }
 
 func (s *Server) Run() error {
-	if s.cfg.EnableHTTPS {
-		return s.httpServer.ListenAndServeTLS("", "")
-	}
+	//if s.cfg.EnableHTTPS {
+	//	return s.httpServer.ListenAndServeTLS("", "")
+	//}
 
 	return s.httpServer.ListenAndServe()
 }

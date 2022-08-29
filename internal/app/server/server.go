@@ -15,7 +15,7 @@ const (
 	idleTimeout  = 60 * time.Second
 	readTimeout  = 60 * time.Second
 	writeTimeout = 60 * time.Second
-	cacheDir     = "cache-dir"
+	cacheDir     = "certs"
 )
 
 type Server struct {

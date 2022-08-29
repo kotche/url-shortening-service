@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -13,7 +14,16 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/storage/postgres"
 )
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+
+	printBuildInfo()
+
 	rand.Seed(time.Now().UnixNano())
 
 	conf, err := config.NewConfig()
@@ -65,4 +75,11 @@ func main() {
 
 	handlerObj := handler.NewHandler(serviceURL, conf)
 	log.Fatal(http.ListenAndServe(conf.ServerAddr, handlerObj.Router))
+}
+
+// example: go run -ldflags "-X main.buildVersion=v1.0 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" main.go
+func printBuildInfo() {
+	fmt.Printf("Build version: %s\n", buildVersion)
+	fmt.Printf("Build date: %s\n", buildDate)
+	fmt.Printf("Build commit: %s\n", buildCommit)
 }

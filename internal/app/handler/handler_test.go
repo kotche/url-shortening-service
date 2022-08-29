@@ -624,3 +624,65 @@ func TestGzipHandle(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlePostShortenBatch(t *testing.T) {
+
+	conf, _ := config.NewConfig()
+	fakeRepo := &test.FakeRepo{}
+
+	s := service.NewService(fakeRepo)
+	s.SetDB(fakeRepo)
+	h := NewHandler(s, conf)
+
+	input := []usecase.InputCorrelationURL{
+		{
+			CorrelationID: "1",
+			Origin:        "www.1.ru",
+		},
+		{
+			CorrelationID: "2",
+			Origin:        "www.2.ru",
+		},
+		{
+			CorrelationID: "3",
+			Origin:        "www.3.ru",
+		},
+	}
+
+	inputJSON, _ := json.Marshal(input)
+	body := bytes.NewBuffer(inputJSON)
+
+	r := httptest.NewRequest(http.MethodPost, "/api/shorten/batch", body)
+	w := httptest.NewRecorder()
+
+	h.Router.ServeHTTP(w, r)
+
+	response := w.Result()
+	defer response.Body.Close()
+
+	assert.Equal(t, http.StatusCreated, response.StatusCode)
+}
+
+func TestHandleDeleteURLs(t *testing.T) {
+
+	conf, _ := config.NewConfig()
+	fakeRepo := &test.FakeRepo{}
+
+	s := service.NewService(fakeRepo)
+	s.SetDB(fakeRepo)
+	h := NewHandler(s, conf)
+
+	input := []string{"1", "2", "3"}
+	inputJSON, _ := json.Marshal(input)
+	body := bytes.NewBuffer(inputJSON)
+
+	r := httptest.NewRequest(http.MethodDelete, "/api/user/urls", body)
+	w := httptest.NewRecorder()
+
+	h.Router.ServeHTTP(w, r)
+
+	response := w.Result()
+	defer response.Body.Close()
+
+	assert.Equal(t, http.StatusAccepted, response.StatusCode)
+}

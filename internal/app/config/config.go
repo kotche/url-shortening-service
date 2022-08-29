@@ -28,8 +28,7 @@ func NewConfig() (*Config, error) {
 	regStringVar(&conf.BaseURL, "b", conf.BaseURL, "base url")
 	regStringVar(&conf.FilePath, "f", conf.FilePath, "file storage path")
 	regStringVar(&conf.DBConnect, "d", conf.DBConnect, "database connection")
-	regStringBool(&conf.EnableHTTPS, "c", conf.EnableHTTPS, "enable HTTPS")
-	regStringBool(&conf.EnableHTTPS, "config", conf.EnableHTTPS, "enable HTTPS")
+	regStringBool(&conf.EnableHTTPS, "s", conf.EnableHTTPS, "enable HTTPS")
 	flag.Parse()
 
 	return conf, nil

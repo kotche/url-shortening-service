@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	idleTimeout  = 60 * time.Second
-	readTimeout  = 60 * time.Second
-	writeTimeout = 60 * time.Second
+	idleTimeout  = 300 * time.Second
+	readTimeout  = 300 * time.Second
+	writeTimeout = 300 * time.Second
 	cacheDir     = "certs"
 )
 

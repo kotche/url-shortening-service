@@ -13,8 +13,8 @@ import (
 // Config sets the basic settings
 type (
 	Config struct {
-		ServerAddr  string `env:"SERVER_ADDRESS" json:"server_address"`
-		BaseURL     string `env:"BASE_URL" json:"base_url"`
+		ServerAddr  string `env:"SERVER_ADDRESS" envDefault:"localhost:8080" json:"server_address"`
+		BaseURL     string `env:"BASE_URL" envDefault:"http://localhost:8080" json:"base_url"`
 		FilePath    string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
 		DBConnect   string `env:"DATABASE_DSN" json:"database_dsn"`
 		EnableHTTPS bool   `env:"ENABLE_HTTPS" json:"enable_https"`
@@ -78,10 +78,10 @@ func NewConfig() (*Config, error) {
 
 func readConfigFile(conf *Config, configFilePath string) {
 	configFile, err := os.Open(configFilePath)
-	defer configFile.Close()
 	if err != nil {
 		log.Printf("file config open error: %s", err)
 	}
+	defer configFile.Close()
 	jsonParser := json.NewDecoder(configFile)
 	err = jsonParser.Decode(&conf)
 	if err != nil {

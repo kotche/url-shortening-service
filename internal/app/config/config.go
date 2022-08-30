@@ -1,10 +1,7 @@
 package config
 
 import (
-	"encoding/json"
 	"flag"
-	"log"
-	"os"
 
 	"github.com/caarlos0/env/v6"
 )
@@ -36,9 +33,9 @@ func NewConfig() (*Config, error) {
 
 	conf := &Config{}
 
-	if configFilePath != "" {
-		readConfigFile(conf, configFilePath)
-	}
+	//if configFilePath != "" {
+	//	readConfigFile(conf, configFilePath)
+	//}
 
 	if err := env.Parse(conf); err != nil {
 		return nil, err
@@ -72,15 +69,16 @@ func regStringVar(p *string, name string, value string, usage string) {
 		flag.StringVar(p, name, value, usage)
 	}
 }
-func readConfigFile(conf *Config, configFilePath string) {
-	configFile, err := os.Open(configFilePath)
-	if err != nil {
-		log.Printf("file config open error: %s", err)
-	}
-	defer configFile.Close()
-	jsonParser := json.NewDecoder(configFile)
-	err = jsonParser.Decode(&conf)
-	if err != nil {
-		log.Printf("file config decode error: %s", err)
-	}
-}
+
+//func readConfigFile(conf *Config, configFilePath string) {
+//	configFile, err := os.Open(configFilePath)
+//	if err != nil {
+//		log.Printf("file config open error: %s", err)
+//	}
+//	defer configFile.Close()
+//	jsonParser := json.NewDecoder(configFile)
+//	err = jsonParser.Decode(&conf)
+//	if err != nil {
+//		log.Printf("file config decode error: %s", err)
+//	}
+//}

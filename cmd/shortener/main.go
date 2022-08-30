@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
@@ -74,11 +78,27 @@ func main() {
 		serviceURL = service.NewService(URLStorage)
 	}
 
+	ctx, cansel := context.WithCancel(context.Background())
+	defer cansel()
+
 	handlerObj := handler.NewHandler(serviceURL, conf)
 	srv := server.NewServer(conf, handlerObj.Router)
 
+	//graceful shutdown
+	termChan := make(chan os.Signal, 1)
+	signal.Notify(termChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
+
+	go func() {
+		<-termChan
+		log.Println("server shutdown")
+		cansel()
+		if err = srv.Stop(ctx); err != nil {
+			log.Fatalf("server shutdown error: %s", err)
+		}
+	}()
+
 	if err = srv.Run(); err != nil && err != http.ErrServerClosed {
-		log.Fatal(err)
+		log.Fatalf("server run error: %s", err)
 	}
 }
 

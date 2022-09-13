@@ -7,6 +7,7 @@ import (
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
 	"github.com/kotche/url-shortening-service/internal/app/model"
+	"golang.org/x/sync/errgroup"
 )
 
 // Storage describes methods for storage in RAM , file system , and database
@@ -189,15 +190,30 @@ func (s *Service) worker() {
 }
 
 func (s *Service) GetStats(ctx context.Context) (model.Stats, error) {
-	const nameFunc = "service.GetStats"
-	numberOfURLs, err := s.db.GetNumberOfURLs(ctx)
-	if err != nil {
-		log.Printf("%s error: %s", nameFunc, err.Error())
-		return model.Stats{}, err
-	}
-	numberOfUsers, err := s.db.GetNumberOfUsers(ctx)
-	if err != nil {
-		log.Printf("%s error: %s", nameFunc, err.Error())
+	var numberOfURLs, numberOfUsers int
+	grp, ctx := errgroup.WithContext(ctx)
+
+	grp.Go(func() error {
+		res, err := s.db.GetNumberOfURLs(ctx)
+		if err != nil {
+			log.Printf("%s error: %s", "pgx.GetNumberOfURLs", err.Error())
+			return err
+		}
+		numberOfURLs = res
+		return nil
+	})
+
+	grp.Go(func() error {
+		res, err := s.db.GetNumberOfUsers(ctx)
+		if err != nil {
+			log.Printf("%s error: %s", "pgx.GetNumberOfUsers", err.Error())
+			return err
+		}
+		numberOfUsers = res
+		return nil
+	})
+
+	if err := grp.Wait(); err != nil {
 		return model.Stats{}, err
 	}
 

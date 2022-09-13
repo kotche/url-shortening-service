@@ -723,10 +723,10 @@ func TestHandleGetStats(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			ctx, _ := context.WithCancel(context.Background())
 
 			control := gomock.NewController(t)
 			defer control.Finish()

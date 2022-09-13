@@ -31,39 +31,47 @@ type Handler struct {
 
 // NewHandler constructor gets a handler instance
 func NewHandler(service *service.Service, conf *config.Config) *Handler {
-	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
-	router.Use(middlewares.GzipHandle)
-	router.Use(middlewares.UserCookieHandle)
-
 	handler := &Handler{
 		Service: service,
-		Router:  router,
 		Conf:    conf,
 		Cm:      model.CookieManager{},
 	}
-
-	handler.setRouting()
-
+	handler.Router = handler.InitRoutes()
 	return handler
 }
 
-func (h *Handler) setRouting() {
-	h.Router.Get("/{id}", h.HandleGet)
-	h.Router.Post("/", h.HandlePost)
-	h.Router.Post("/api/shorten", h.HandlePostJSON)
-	h.Router.Get("/api/user/urls", h.HandleGetUserURLs)
-	h.Router.Get("/ping", h.HandlePing)
-	h.Router.Post("/api/shorten/batch", h.HandlePostShortenBatch)
-	h.Router.Delete("/api/user/urls", h.HandleDeleteURLs)
+// InitRoutes initialization routes
+func (h *Handler) InitRoutes() *chi.Mux {
+	router := chi.NewRouter()
+	router.Use(middleware.Recoverer)
+	router.Use(middlewares.GzipHandler)
+	router.Use(middlewares.UserCookieHandler)
 
-	h.Router.Get("/api/internal/stats", h.HandleGetStats)
+	//main routes
+	router.Group(func(router chi.Router) {
+		router.Get("/{id}", h.HandleGet)
+		router.Post("/", h.HandlePost)
+		router.Post("/api/shorten", h.HandlePostJSON)
+		router.Get("/api/user/urls", h.HandleGetUserURLs)
+		router.Get("/ping", h.HandlePing)
+		router.Post("/api/shorten/batch", h.HandlePostShortenBatch)
+		router.Delete("/api/user/urls", h.HandleDeleteURLs)
+	})
 
-	// Регистрация pprof-обработчиков
-	h.Router.HandleFunc("/debug/pprof/*", pprof.Index)
-	h.Router.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	h.Router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-	h.Router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	//trusted network routes
+	router.Group(func(router chi.Router) {
+		trustedNetwork := middlewares.NewTrustedNetwork(h.Conf)
+		router.Use(trustedNetwork.TrustedNetworkHandler)
+		router.Get("/api/internal/stats", h.HandleGetStats)
+	})
+
+	//Registration of pprof handlers
+	router.HandleFunc("/debug/pprof/*", pprof.Index)
+	router.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	router.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	router.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+
+	return router
 }
 
 // HandlePost accepts the URL string in the request body and returns its abbreviated version. Content-Type: text/html

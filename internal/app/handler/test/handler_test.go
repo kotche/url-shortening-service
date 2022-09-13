@@ -1,8 +1,7 @@
-package handler
+package test
 
 import (
 	"bytes"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -14,6 +13,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kotche/url-shortening-service/internal/app/config"
+	"github.com/kotche/url-shortening-service/internal/app/handler"
 	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
 	"github.com/kotche/url-shortening-service/internal/app/model"
 	"github.com/kotche/url-shortening-service/internal/app/service"
@@ -99,7 +99,7 @@ func TestHandlerHandleGet(t *testing.T) {
 			s := service.NewService(repo)
 			s.Gen = nil
 
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 
 			r := httptest.NewRequest(http.MethodGet, tt.fields.endpoint, nil)
 			w := httptest.NewRecorder()
@@ -187,7 +187,7 @@ func TestHandlerHandlePost(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.origin)
@@ -208,7 +208,8 @@ func TestHandlerHandlePost(t *testing.T) {
 
 func TestHandlerHandlePostEmptyBody(t *testing.T) {
 
-	h := NewHandler(nil, nil)
+	conf := new(config.Config)
+	h := handler.NewHandler(nil, conf)
 
 	body := bytes.NewBufferString("")
 
@@ -302,7 +303,7 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.body)
@@ -388,7 +389,7 @@ func TestHandlerHandlePostJSONBadRequest(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
-			h := NewHandler(nil, conf)
+			h := handler.NewHandler(nil, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -473,7 +474,7 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			s.Gen = nil
 
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			r := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
@@ -495,137 +496,6 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 	}
 }
 
-func TestGzipHandle(t *testing.T) {
-
-	conf, _ := config.NewConfig()
-
-	type want struct {
-		code int
-	}
-
-	type header struct {
-		name  string
-		value string
-	}
-
-	type fields struct {
-		compressRequest    bool
-		decompressResponse bool
-		headers            []header
-	}
-
-	tests := []struct {
-		name   string
-		fields fields
-		want   want
-	}{
-		{
-			name: "compress_decompress_ok",
-			fields: fields{
-				compressRequest:    true,
-				decompressResponse: true,
-				headers: []header{
-					{name: "Content-Encoding", value: "gzip"},
-					{name: "Accept-Encoding", value: "gzip"},
-				},
-			},
-			want: want{
-				code: http.StatusCreated,
-			},
-		},
-		{
-			name: "no_compress",
-			fields: fields{
-				compressRequest:    false,
-				decompressResponse: false,
-				headers:            []header{},
-			},
-			want: want{
-				code: http.StatusCreated,
-			},
-		},
-		{
-			name: "bad_compress_header",
-			fields: fields{
-				compressRequest:    true,
-				decompressResponse: false,
-				headers: []header{
-					{name: "Content-Encoding", value: "test"},
-				},
-			},
-			want: want{
-				code: http.StatusBadRequest,
-			},
-		},
-		{
-			name: "bad_compress_body_request",
-			fields: fields{
-				compressRequest:    false,
-				decompressResponse: false,
-				headers: []header{
-					{name: "Content-Encoding", value: "gzip"},
-				},
-			},
-			want: want{
-				code: http.StatusInternalServerError,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			generator := mockService.Generator{Short: "qwertyT"}
-			cm := mockHandler.CookieManager{Cookie: "123"}
-
-			mock := &test.FakeRepo{Short: "qwertyT"}
-			s := service.NewService(mock)
-			s.Gen = generator
-
-			h := NewHandler(s, conf)
-			h.Cm = cm
-
-			data := []byte(`{"url":"https://www.google.com"}`)
-
-			var body bytes.Buffer
-
-			if tt.fields.compressRequest {
-				writer, _ := gzip.NewWriterLevel(&body, gzip.BestSpeed)
-				writer.Write(data)
-				writer.Close()
-			} else {
-				body = *bytes.NewBuffer(data)
-			}
-
-			r := httptest.NewRequest(http.MethodPost, "/api/shorten", &body)
-			r.Header.Set("Content-Type", "application/json")
-
-			for _, v := range tt.fields.headers {
-				r.Header.Set(v.name, v.value)
-			}
-
-			w := httptest.NewRecorder()
-			h.Router.ServeHTTP(w, r)
-			response := w.Result()
-			defer response.Body.Close()
-
-			assert.Equal(t, tt.want.code, response.StatusCode)
-
-			if tt.fields.decompressResponse {
-				reader, _ := gzip.NewReader(bytes.NewReader(w.Body.Bytes()))
-				defer reader.Close()
-				var b bytes.Buffer
-				b.ReadFrom(reader)
-				bodyResponse := b.Bytes()
-
-				if !strings.Contains(string(bodyResponse), "qwertyT") {
-					t.Error("response body does not match")
-				}
-			}
-		})
-	}
-}
-
 func TestHandlePostShortenBatch(t *testing.T) {
 
 	conf, _ := config.NewConfig()
@@ -633,7 +503,7 @@ func TestHandlePostShortenBatch(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := NewHandler(s, conf)
+	h := handler.NewHandler(s, conf)
 
 	input := []model.InputCorrelationURL{
 		{
@@ -671,7 +541,7 @@ func TestHandleDeleteURLs(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := NewHandler(s, conf)
+	h := handler.NewHandler(s, conf)
 
 	input := []string{"1", "2", "3"}
 	inputJSON, _ := json.Marshal(input)
@@ -690,7 +560,8 @@ func TestHandleDeleteURLs(t *testing.T) {
 
 func TestHandleGetStats(t *testing.T) {
 
-	conf, _ := config.NewConfig()
+	cfg, _ := config.NewConfig()
+	cfg.TrustedSubnet = "192.168.1.0"
 
 	type want struct {
 		status int
@@ -739,9 +610,10 @@ func TestHandleGetStats(t *testing.T) {
 			s.Gen = nil
 			s.SetDB(repo)
 
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, cfg)
 
 			r := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
+			r.Header.Set("X-Real-IP", cfg.TrustedSubnet)
 			w := httptest.NewRecorder()
 
 			h.Router.ServeHTTP(w, r)

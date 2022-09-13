@@ -1,8 +1,8 @@
-package handler
+package test
 
 import (
 	"bytes"
-	"compress/gzip"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -13,12 +13,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kotche/url-shortening-service/internal/app/config"
+	"github.com/kotche/url-shortening-service/internal/app/handler"
 	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
+	"github.com/kotche/url-shortening-service/internal/app/model"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	mockService "github.com/kotche/url-shortening-service/internal/app/service/mock"
 	mockStorage "github.com/kotche/url-shortening-service/internal/app/storage/mock"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
-	"github.com/kotche/url-shortening-service/internal/app/usecase"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +34,7 @@ func TestHandlerHandleGet(t *testing.T) {
 
 	type fields struct {
 		id       string
-		URL      *usecase.URL
+		URL      *model.URL
 		endpoint string
 		err      error
 	}
@@ -46,7 +47,7 @@ func TestHandlerHandleGet(t *testing.T) {
 		{
 			name: "url_exists",
 			fields: fields{
-				URL:      &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				URL:      &model.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
 				endpoint: "/qwertyT",
 				id:       "qwertyT",
 			},
@@ -74,7 +75,7 @@ func TestHandlerHandleGet(t *testing.T) {
 				URL:      nil,
 				endpoint: "/qwertyT",
 				id:       "qwertyT",
-				err:      usecase.GoneError{},
+				err:      model.GoneError{},
 			},
 			want: want{
 				status:   http.StatusGone,
@@ -98,7 +99,7 @@ func TestHandlerHandleGet(t *testing.T) {
 			s := service.NewService(repo)
 			s.Gen = nil
 
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 
 			r := httptest.NewRequest(http.MethodGet, tt.fields.endpoint, nil)
 			w := httptest.NewRecorder()
@@ -128,8 +129,8 @@ func TestHandlerHandlePost(t *testing.T) {
 		userID string
 		short  string
 		origin string
-		URLAdd *usecase.URL
-		URLGet *usecase.URL
+		URLAdd *model.URL
+		URLGet *model.URL
 		err    error
 	}
 
@@ -141,7 +142,7 @@ func TestHandlerHandlePost(t *testing.T) {
 		{
 			name: "new_url",
 			fields: fields{
-				URLAdd: &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				URLAdd: &model.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
 				URLGet: nil,
 				short:  "qwertyT",
 				origin: "www.yandex.ru",
@@ -155,9 +156,9 @@ func TestHandlerHandlePost(t *testing.T) {
 		{
 			name: "conflict_url",
 			fields: fields{
-				URLAdd: &usecase.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
+				URLAdd: &model.URL{Origin: "www.yandex.ru", Short: "qwertyT"},
 				URLGet: nil,
-				err:    usecase.ConflictURLError{ShortenURL: "qwertyT"},
+				err:    model.ConflictURLError{ShortenURL: "qwertyT"},
 				short:  "qwertyT",
 				origin: "www.yandex.ru",
 				userID: "123",
@@ -186,7 +187,7 @@ func TestHandlerHandlePost(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.origin)
@@ -207,7 +208,8 @@ func TestHandlerHandlePost(t *testing.T) {
 
 func TestHandlerHandlePostEmptyBody(t *testing.T) {
 
-	h := NewHandler(nil, nil)
+	conf := new(config.Config)
+	h := handler.NewHandler(nil, conf)
 
 	body := bytes.NewBufferString("")
 
@@ -237,8 +239,8 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 		userID      string
 		short       string
 		origin      string
-		URLAdd      *usecase.URL
-		URLGet      *usecase.URL
+		URLAdd      *model.URL
+		URLGet      *model.URL
 		body        string
 		err         error
 		contentType string
@@ -255,7 +257,7 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 				body:        `{"url":"www.google.com"}`,
 				origin:      "www.google.com",
 				short:       "qwertyT",
-				URLAdd:      &usecase.URL{Origin: "www.google.com", Short: "qwertyT"},
+				URLAdd:      &model.URL{Origin: "www.google.com", Short: "qwertyT"},
 				URLGet:      nil,
 				userID:      "123",
 				contentType: "application/json",
@@ -271,9 +273,9 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 				body:        `{"url":"www.google.com"}`,
 				origin:      "www.google.com",
 				short:       "qwertyT",
-				URLAdd:      &usecase.URL{Origin: "www.google.com", Short: "qwertyT"},
+				URLAdd:      &model.URL{Origin: "www.google.com", Short: "qwertyT"},
 				URLGet:      nil,
-				err:         usecase.ConflictURLError{ShortenURL: "qwertyT"},
+				err:         model.ConflictURLError{ShortenURL: "qwertyT"},
 				userID:      "123",
 				contentType: "application/json",
 			},
@@ -301,7 +303,7 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.body)
@@ -387,7 +389,7 @@ func TestHandlerHandlePostJSONBadRequest(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
-			h := NewHandler(nil, conf)
+			h := handler.NewHandler(nil, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -411,12 +413,12 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 
 	type want struct {
 		status int
-		urls   []*usecase.URL
+		urls   []*model.URL
 	}
 
 	type fields struct {
 		userID string
-		urls   []*usecase.URL
+		urls   []*model.URL
 		err    error
 	}
 
@@ -429,14 +431,14 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			name: "correct_get_urls",
 			fields: fields{
 				userID: "123",
-				urls: []*usecase.URL{
+				urls: []*model.URL{
 					{Short: "111", Origin: "www.yandex.ru"},
 					{Short: "222", Origin: "www.google.com"},
 				},
 			},
 			want: want{
 				status: http.StatusOK,
-				urls: []*usecase.URL{
+				urls: []*model.URL{
 					{Short: "http://localhost:8080/111", Origin: "www.yandex.ru"},
 					{Short: "http://localhost:8080/222", Origin: "www.google.com"},
 				},
@@ -447,14 +449,14 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			fields: fields{
 				userID: "123",
 				err:    errors.New("bd error"),
-				urls: []*usecase.URL{
+				urls: []*model.URL{
 					{Short: "111", Origin: "www.yandex.ru"},
 					{Short: "222", Origin: "www.google.com"},
 				},
 			},
 			want: want{
 				status: http.StatusInternalServerError,
-				urls:   []*usecase.URL{},
+				urls:   []*model.URL{},
 			},
 		},
 	}
@@ -472,7 +474,7 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			s.Gen = nil
 
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
-			h := NewHandler(s, conf)
+			h := handler.NewHandler(s, conf)
 			h.Cm = cm
 
 			r := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
@@ -485,142 +487,11 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 
 			body, _ := io.ReadAll(response.Body)
 
-			URLResponse := []*usecase.URL{}
+			URLResponse := []*model.URL{}
 			_ = json.Unmarshal(body, &URLResponse)
 
 			assert.Equal(t, tt.want.status, response.StatusCode)
 			assert.EqualValues(t, tt.want.urls, URLResponse)
-		})
-	}
-}
-
-func TestGzipHandle(t *testing.T) {
-
-	conf, _ := config.NewConfig()
-
-	type want struct {
-		code int
-	}
-
-	type header struct {
-		name  string
-		value string
-	}
-
-	type fields struct {
-		compressRequest    bool
-		decompressResponse bool
-		headers            []header
-	}
-
-	tests := []struct {
-		name   string
-		fields fields
-		want   want
-	}{
-		{
-			name: "compress_decompress_ok",
-			fields: fields{
-				compressRequest:    true,
-				decompressResponse: true,
-				headers: []header{
-					{name: "Content-Encoding", value: "gzip"},
-					{name: "Accept-Encoding", value: "gzip"},
-				},
-			},
-			want: want{
-				code: http.StatusCreated,
-			},
-		},
-		{
-			name: "no_compress",
-			fields: fields{
-				compressRequest:    false,
-				decompressResponse: false,
-				headers:            []header{},
-			},
-			want: want{
-				code: http.StatusCreated,
-			},
-		},
-		{
-			name: "bad_compress_header",
-			fields: fields{
-				compressRequest:    true,
-				decompressResponse: false,
-				headers: []header{
-					{name: "Content-Encoding", value: "test"},
-				},
-			},
-			want: want{
-				code: http.StatusBadRequest,
-			},
-		},
-		{
-			name: "bad_compress_body_request",
-			fields: fields{
-				compressRequest:    false,
-				decompressResponse: false,
-				headers: []header{
-					{name: "Content-Encoding", value: "gzip"},
-				},
-			},
-			want: want{
-				code: http.StatusInternalServerError,
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-
-			generator := mockService.Generator{Short: "qwertyT"}
-			cm := mockHandler.CookieManager{Cookie: "123"}
-
-			mock := &test.FakeRepo{Short: "qwertyT"}
-			s := service.NewService(mock)
-			s.Gen = generator
-
-			h := NewHandler(s, conf)
-			h.Cm = cm
-
-			data := []byte(`{"url":"https://www.google.com"}`)
-
-			var body bytes.Buffer
-
-			if tt.fields.compressRequest {
-				writer, _ := gzip.NewWriterLevel(&body, gzip.BestSpeed)
-				writer.Write(data)
-				writer.Close()
-			} else {
-				body = *bytes.NewBuffer(data)
-			}
-
-			r := httptest.NewRequest(http.MethodPost, "/api/shorten", &body)
-			r.Header.Set("Content-Type", "application/json")
-
-			for _, v := range tt.fields.headers {
-				r.Header.Set(v.name, v.value)
-			}
-
-			w := httptest.NewRecorder()
-			h.Router.ServeHTTP(w, r)
-			response := w.Result()
-			defer response.Body.Close()
-
-			assert.Equal(t, tt.want.code, response.StatusCode)
-
-			if tt.fields.decompressResponse {
-				reader, _ := gzip.NewReader(bytes.NewReader(w.Body.Bytes()))
-				defer reader.Close()
-				var b bytes.Buffer
-				b.ReadFrom(reader)
-				bodyResponse := b.Bytes()
-
-				if !strings.Contains(string(bodyResponse), "qwertyT") {
-					t.Error("response body does not match")
-				}
-			}
 		})
 	}
 }
@@ -632,9 +503,9 @@ func TestHandlePostShortenBatch(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := NewHandler(s, conf)
+	h := handler.NewHandler(s, conf)
 
-	input := []usecase.InputCorrelationURL{
+	input := []model.InputCorrelationURL{
 		{
 			CorrelationID: "1",
 			Origin:        "www.1.ru",
@@ -670,7 +541,7 @@ func TestHandleDeleteURLs(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := NewHandler(s, conf)
+	h := handler.NewHandler(s, conf)
 
 	input := []string{"1", "2", "3"}
 	inputJSON, _ := json.Marshal(input)
@@ -685,4 +556,81 @@ func TestHandleDeleteURLs(t *testing.T) {
 	defer response.Body.Close()
 
 	assert.Equal(t, http.StatusAccepted, response.StatusCode)
+}
+
+func TestHandleGetStats(t *testing.T) {
+
+	cfg, _ := config.NewConfig()
+	cfg.TrustedSubnet = "192.168.1.0"
+
+	type want struct {
+		status int
+		nUsers int
+		nURLs  int
+	}
+
+	type fields struct {
+		nUsers int
+		nURLs  int
+		err    error
+	}
+
+	tests := []struct {
+		name   string
+		fields fields
+		want   want
+	}{
+		{
+			name: "correct_get_stats",
+			fields: fields{
+				nUsers: 5,
+				nURLs:  10,
+			},
+			want: want{
+				status: http.StatusOK,
+				nUsers: 5,
+				nURLs:  10,
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			ctx, cansel := context.WithCancel(context.Background())
+
+			control := gomock.NewController(t)
+			defer control.Finish()
+
+			repo := mockStorage.NewMockDatabase(control)
+			repo.EXPECT().GetNumberOfUsers(ctx).Return(tt.fields.nUsers, tt.fields.err).Times(1)
+			repo.EXPECT().GetNumberOfURLs(ctx).Return(tt.fields.nURLs, tt.fields.err).Times(1)
+
+			s := service.NewService(repo)
+			s.Gen = nil
+			s.SetDB(repo)
+
+			h := handler.NewHandler(s, cfg)
+
+			r := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
+			r.Header.Set("X-Real-IP", cfg.TrustedSubnet)
+			w := httptest.NewRecorder()
+
+			h.Router.ServeHTTP(w, r)
+
+			response := w.Result()
+			defer response.Body.Close()
+
+			body, _ := io.ReadAll(response.Body)
+
+			var stats model.Stats
+			_ = json.Unmarshal(body, &stats)
+
+			assert.Equal(t, tt.want.status, response.StatusCode)
+			assert.Equal(t, tt.want.nUsers, stats.NumberOfUsers)
+			assert.Equal(t, tt.want.nURLs, stats.NumberOfURLs)
+
+			cansel()
+		})
+	}
 }

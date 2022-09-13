@@ -1,0 +1,11 @@
+{
+  "server_address": "localhost:8080",
+  "base_url": "http://localhost",
+  "file_storage_path": "/path/to/file.db",
+  "database_dsn": "postgresql://postgres:postgres@localhost:5432/postgres",
+  "enable_https": false,
+  "hostWhitelist":[
+    ""
+  ],
+  "trusted_subnet": "192.168.1.0"
+}

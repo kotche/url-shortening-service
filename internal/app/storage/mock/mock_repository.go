@@ -9,7 +9,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	usecase "github.com/kotche/url-shortening-service/internal/app/usecase"
+	model "github.com/kotche/url-shortening-service/internal/app/model"
 )
 
 // MockStorage is a mock of Storage interface.
@@ -35,8 +35,8 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 	return m.recorder
 }
 
-// Add mock base method.
-func (m *MockStorage) Add(userID string, url *usecase.URL) error {
+// Add mocks base method.
+func (m *MockStorage) Add(userID string, url *model.URL) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", userID, url)
 	ret0, _ := ret[0].(error)
@@ -49,7 +49,7 @@ func (mr *MockStorageMockRecorder) Add(userID, url interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockStorage)(nil).Add), userID, url)
 }
 
-// Close mock base method.
+// Close mocks base method.
 func (m *MockStorage) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -63,11 +63,11 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockStorage)(nil).Close))
 }
 
-// GetByID mock base method.
-func (m *MockStorage) GetByID(id string) (*usecase.URL, error) {
+// GetByID mocks base method.
+func (m *MockStorage) GetByID(id string) (*model.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", id)
-	ret0, _ := ret[0].(*usecase.URL)
+	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -78,11 +78,11 @@ func (mr *MockStorageMockRecorder) GetByID(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockStorage)(nil).GetByID), id)
 }
 
-// GetUserURLs mock base method.
-func (m *MockStorage) GetUserURLs(userID string) ([]*usecase.URL, error) {
+// GetUserURLs mocks base method.
+func (m *MockStorage) GetUserURLs(userID string) ([]*model.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserURLs", userID)
-	ret0, _ := ret[0].([]*usecase.URL)
+	ret0, _ := ret[0].([]*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -116,8 +116,8 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 	return m.recorder
 }
 
-// Add mock base method.
-func (m *MockDatabase) Add(userID string, url *usecase.URL) error {
+// Add mocks base method.
+func (m *MockDatabase) Add(userID string, url *model.URL) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", userID, url)
 	ret0, _ := ret[0].(error)
@@ -130,7 +130,7 @@ func (mr *MockDatabaseMockRecorder) Add(userID, url interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDatabase)(nil).Add), userID, url)
 }
 
-// Close mock base method.
+// Close mocks base method.
 func (m *MockDatabase) Close() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Close")
@@ -144,8 +144,8 @@ func (mr *MockDatabaseMockRecorder) Close() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockDatabase)(nil).Close))
 }
 
-// DeleteBatch mock base method.
-func (m *MockDatabase) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error {
+// DeleteBatch mocks base method.
+func (m *MockDatabase) DeleteBatch(ctx context.Context, toDelete []model.DeleteUserURLs) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteBatch", ctx, toDelete)
 	ret0, _ := ret[0].(error)
@@ -158,11 +158,11 @@ func (mr *MockDatabaseMockRecorder) DeleteBatch(ctx, toDelete interface{}) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteBatch", reflect.TypeOf((*MockDatabase)(nil).DeleteBatch), ctx, toDelete)
 }
 
-// GetByID mock base method.
-func (m *MockDatabase) GetByID(id string) (*usecase.URL, error) {
+// GetByID mocks base method.
+func (m *MockDatabase) GetByID(id string) (*model.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetByID", id)
-	ret0, _ := ret[0].(*usecase.URL)
+	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -173,11 +173,41 @@ func (mr *MockDatabaseMockRecorder) GetByID(id interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDatabase)(nil).GetByID), id)
 }
 
-// GetUserURLs mock base method.
-func (m *MockDatabase) GetUserURLs(userID string) ([]*usecase.URL, error) {
+// GetNumberOfURLs mocks base method.
+func (m *MockDatabase) GetNumberOfURLs(ctx context.Context) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNumberOfURLs", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNumberOfURLs indicates an expected call of GetNumberOfURLs.
+func (mr *MockDatabaseMockRecorder) GetNumberOfURLs(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNumberOfURLs", reflect.TypeOf((*MockDatabase)(nil).GetNumberOfURLs), ctx)
+}
+
+// GetNumberOfUsers mocks base method.
+func (m *MockDatabase) GetNumberOfUsers(ctx context.Context) (int, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetNumberOfUsers", ctx)
+	ret0, _ := ret[0].(int)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetNumberOfUsers indicates an expected call of GetNumberOfUsers.
+func (mr *MockDatabaseMockRecorder) GetNumberOfUsers(ctx interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNumberOfUsers", reflect.TypeOf((*MockDatabase)(nil).GetNumberOfUsers), ctx)
+}
+
+// GetUserURLs mocks base method.
+func (m *MockDatabase) GetUserURLs(userID string) ([]*model.URL, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUserURLs", userID)
-	ret0, _ := ret[0].([]*usecase.URL)
+	ret0, _ := ret[0].([]*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -188,7 +218,7 @@ func (mr *MockDatabaseMockRecorder) GetUserURLs(userID interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockDatabase)(nil).GetUserURLs), userID)
 }
 
-// Ping mock base method.
+// Ping mocks base method.
 func (m *MockDatabase) Ping() error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Ping")
@@ -202,8 +232,8 @@ func (mr *MockDatabaseMockRecorder) Ping() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabase)(nil).Ping))
 }
 
-// WriteBatch mock base method.
-func (m *MockDatabase) WriteBatch(ctx context.Context, userID string, urls map[string]*usecase.URL) error {
+// WriteBatch mocks base method.
+func (m *MockDatabase) WriteBatch(ctx context.Context, userID string, urls map[string]*model.URL) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WriteBatch", ctx, userID, urls)
 	ret0, _ := ret[0].(error)
@@ -214,4 +244,41 @@ func (m *MockDatabase) WriteBatch(ctx context.Context, userID string, urls map[s
 func (mr *MockDatabaseMockRecorder) WriteBatch(ctx, userID, urls interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WriteBatch", reflect.TypeOf((*MockDatabase)(nil).WriteBatch), ctx, userID, urls)
+}
+
+// MockIGenerator is a mock of IGenerator interface.
+type MockIGenerator struct {
+	ctrl     *gomock.Controller
+	recorder *MockIGeneratorMockRecorder
+}
+
+// MockIGeneratorMockRecorder is the mock recorder for MockIGenerator.
+type MockIGeneratorMockRecorder struct {
+	mock *MockIGenerator
+}
+
+// NewMockIGenerator creates a new mock instance.
+func NewMockIGenerator(ctrl *gomock.Controller) *MockIGenerator {
+	mock := &MockIGenerator{ctrl: ctrl}
+	mock.recorder = &MockIGeneratorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockIGenerator) EXPECT() *MockIGeneratorMockRecorder {
+	return m.recorder
+}
+
+// MakeShortURL mocks base method.
+func (m *MockIGenerator) MakeShortURL() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "MakeShortURL")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// MakeShortURL indicates an expected call of MakeShortURL.
+func (mr *MockIGeneratorMockRecorder) MakeShortURL() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "MakeShortURL", reflect.TypeOf((*MockIGenerator)(nil).MakeShortURL))
 }

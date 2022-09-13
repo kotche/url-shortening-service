@@ -1,4 +1,4 @@
-package usecase
+package model
 
 // URL contains shortened and original URL
 type URL struct {

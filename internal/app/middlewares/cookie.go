@@ -8,8 +8,8 @@ import (
 	"github.com/kotche/url-shortening-service/internal/app/utils"
 )
 
-// UserCookieHandle checks for the presence of the user ID in the cookie file. If not, then a new one is issued
-func UserCookieHandle(next http.Handler) http.Handler {
+// UserCookieHandler checks for the presence of the user ID in the cookie file. If not, then a new one is issued
+func UserCookieHandler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var (
 			userID       string

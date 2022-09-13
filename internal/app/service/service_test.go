@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/kotche/url-shortening-service/internal/app/model"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
-	"github.com/kotche/url-shortening-service/internal/app/usecase"
 )
 
 func BenchmarkGetURLModel(b *testing.B) {
@@ -15,11 +15,11 @@ func BenchmarkGetURLModel(b *testing.B) {
 	repo := storage.NewUrls()
 	s := NewService(repo)
 
-	urls := make([]usecase.URL, b.N)
+	urls := make([]model.URL, b.N)
 
 	for i := 0; i < b.N; i++ {
 		str := strconv.Itoa(i)
-		urls[i] = usecase.URL{Short: str, Origin: str}
+		urls[i] = model.URL{Short: str, Origin: str}
 	}
 
 	b.ResetTimer()
@@ -34,11 +34,11 @@ func BenchmarkGetURLModel(b *testing.B) {
 func BenchmarkShortenBatch(b *testing.B) {
 	const size = 100
 
-	urlsInput := make([]usecase.InputCorrelationURL, size)
+	urlsInput := make([]model.InputCorrelationURL, size)
 
 	for i := 0; i < size; i++ {
 		str := strconv.Itoa(i)
-		urlsInput[i] = usecase.InputCorrelationURL{CorrelationID: str, Origin: str}
+		urlsInput[i] = model.InputCorrelationURL{CorrelationID: str, Origin: str}
 	}
 
 	ctx := context.Background()

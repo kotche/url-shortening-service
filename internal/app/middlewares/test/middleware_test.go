@@ -229,6 +229,7 @@ func TestTrustedNetworkHandler(t *testing.T) {
 
 			handlerToTest.ServeHTTP(res, req)
 			response := res.Result()
+			defer response.Body.Close()
 
 			assert.Equal(t, tt.want.code, response.StatusCode)
 		})

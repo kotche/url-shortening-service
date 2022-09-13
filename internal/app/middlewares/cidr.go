@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"bytes"
 	"log"
 	"net"
 	"net/http"
@@ -39,7 +38,7 @@ func (t *TrustedNetwork) TrustedNetworkHandler(next http.Handler) http.Handler {
 			ipStr = ipStrs[0]
 			ip = net.ParseIP(ipStr)
 		}
-		if !bytes.Equal(t.TrustedSubnet, ip) {
+		if !t.TrustedSubnet.Equal(ip) {
 			log.Printf("middlewares TrustedNetworkHandler: TrustedSubnet - %s, ip - %s", t.TrustedSubnet, ip)
 			http.Error(w, accessProhibited, http.StatusForbidden)
 			return

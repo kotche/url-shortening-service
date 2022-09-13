@@ -597,7 +597,7 @@ func TestHandleGetStats(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			ctx, _ := context.WithCancel(context.Background())
+			ctx, cansel := context.WithCancel(context.Background())
 
 			control := gomock.NewController(t)
 			defer control.Finish()
@@ -629,6 +629,8 @@ func TestHandleGetStats(t *testing.T) {
 			assert.Equal(t, tt.want.status, response.StatusCode)
 			assert.Equal(t, tt.want.nUsers, stats.NumberOfUsers)
 			assert.Equal(t, tt.want.nURLs, stats.NumberOfURLs)
+
+			cansel()
 		})
 	}
 }

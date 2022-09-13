@@ -7,7 +7,7 @@ import (
 	"log"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/kotche/url-shortening-service/internal/app/usecase"
+	"github.com/kotche/url-shortening-service/internal/app/model"
 )
 
 type DB struct {
@@ -24,7 +24,7 @@ func NewDB(DSN string) (*DB, error) {
 	return db, nil
 }
 
-func (d *DB) Add(userID string, url *usecase.URL) error {
+func (d *DB) Add(userID string, url *model.URL) error {
 	ctx := context.Background()
 
 	_, err := d.conn.ExecContext(ctx,
@@ -45,13 +45,13 @@ func (d *DB) Add(userID string, url *usecase.URL) error {
 	var output string
 	result.Scan(&output)
 	if output != url.Short {
-		return usecase.ConflictURLError{ShortenURL: output}
+		return model.ConflictURLError{ShortenURL: output}
 	}
 
 	return nil
 }
 
-func (d *DB) GetByID(id string) (*usecase.URL, error) {
+func (d *DB) GetByID(id string) (*model.URL, error) {
 	var (
 		output  string
 		deleted bool
@@ -61,19 +61,19 @@ func (d *DB) GetByID(id string) (*usecase.URL, error) {
 	row.Scan(&output, &deleted)
 
 	if deleted {
-		return nil, usecase.GoneError{ShortenURL: output}
+		return nil, model.GoneError{ShortenURL: output}
 	}
 
 	if output != "" {
-		url := usecase.NewURL(output, id)
+		url := model.NewURL(output, id)
 		return url, nil
 	} else {
 		return nil, fmt.Errorf("key not found")
 	}
 }
 
-func (d *DB) GetUserURLs(userID string) ([]*usecase.URL, error) {
-	urls := make([]*usecase.URL, 0)
+func (d *DB) GetUserURLs(userID string) ([]*model.URL, error) {
+	urls := make([]*model.URL, 0)
 
 	rows, err := d.conn.Query("SELECT short, origin FROM public.urls WHERE user_id=$1", userID)
 	if err != nil {
@@ -82,7 +82,7 @@ func (d *DB) GetUserURLs(userID string) ([]*usecase.URL, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var url usecase.URL
+		var url model.URL
 		err = rows.Scan(&url.Short, &url.Origin)
 		if err != nil {
 			return nil, err
@@ -112,7 +112,7 @@ func (d *DB) Ping() error {
 	return nil
 }
 
-func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*usecase.URL) error {
+func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*model.URL) error {
 	tx, err := d.conn.Begin()
 	if err != nil {
 		return err
@@ -143,7 +143,7 @@ func (d *DB) WriteBatch(ctx context.Context, userID string, urls map[string]*use
 	return tx.Commit()
 }
 
-func (d *DB) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs) error {
+func (d *DB) DeleteBatch(ctx context.Context, toDelete []model.DeleteUserURLs) error {
 	tx, err := d.conn.Begin()
 	if err != nil {
 		return err
@@ -167,6 +167,26 @@ func (d *DB) DeleteBatch(ctx context.Context, toDelete []usecase.DeleteUserURLs)
 	}
 
 	return tx.Commit()
+}
+
+func (d *DB) GetNumberOfURLs(ctx context.Context) (int, error) {
+	var numberOfURLs int
+	row := d.conn.QueryRowContext(ctx, "SELECT COUNT(short) FROM urls")
+	err := row.Scan(&numberOfURLs)
+	if err != nil {
+		return 0, err
+	}
+	return numberOfURLs, nil
+}
+
+func (d *DB) GetNumberOfUsers(ctx context.Context) (int, error) {
+	var numberOfUsers int
+	row := d.conn.QueryRowContext(ctx, "SELECT COUNT(user_id) FROM users")
+	err := row.Scan(&numberOfUsers)
+	if err != nil {
+		return 0, err
+	}
+	return numberOfUsers, nil
 }
 
 func (d *DB) init() {

@@ -1,4 +1,4 @@
-package usecase
+package model
 
 import (
 	"math/rand"
@@ -11,7 +11,7 @@ const symbols = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 // Generator generates shortened RL
 type Generator struct{}
 
-//MakeShortURL returns the generated shortened URL
+// MakeShortURL returns the generated shortened URL
 func (g Generator) MakeShortURL() string {
 	b := make([]byte, config.ShortURLLen)
 	for i := range b {

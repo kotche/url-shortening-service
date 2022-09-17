@@ -219,17 +219,17 @@ func (mr *MockDatabaseMockRecorder) GetUserURLs(userID interface{}) *gomock.Call
 }
 
 // Ping mocks base method.
-func (m *MockDatabase) Ping() error {
+func (m *MockDatabase) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockDatabaseMockRecorder) Ping() *gomock.Call {
+func (mr *MockDatabaseMockRecorder) Ping(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabase)(nil).Ping))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabase)(nil).Ping), ctx)
 }
 
 // WriteBatch mocks base method.

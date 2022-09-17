@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -21,7 +22,7 @@ type Storage interface {
 // Database describes methods for storage in database
 type Database interface {
 	Storage
-	Ping() error
+	Ping(ctx context.Context) error
 	WriteBatch(ctx context.Context, userID string, urls map[string]*model.URL) error
 	DeleteBatch(ctx context.Context, toDelete []model.DeleteUserURLs) error
 	GetNumberOfUsers(ctx context.Context) (int, error)
@@ -105,8 +106,14 @@ func (s *Service) GetUserURLs(userID string) ([]*model.URL, error) {
 	return userURLs, nil
 }
 
-func (s *Service) Ping() error {
-	if err := s.db.Ping(); err != nil {
+func (s *Service) Ping(ctx context.Context) error {
+	if s.db == nil {
+		log.Printf("Ping error: database not initialized")
+		return fmt.Errorf("database not initialized")
+	}
+
+	if err := s.db.Ping(ctx); err != nil {
+		log.Printf("Ping error: %s", err.Error())
 		return err
 	}
 	return nil

@@ -1,4 +1,4 @@
-package test
+package rest
 
 import (
 	"bytes"
@@ -13,13 +13,12 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"github.com/kotche/url-shortening-service/internal/app/handler"
-	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
 	"github.com/kotche/url-shortening-service/internal/app/model"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	mockService "github.com/kotche/url-shortening-service/internal/app/service/mock"
 	mockStorage "github.com/kotche/url-shortening-service/internal/app/storage/mock"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
+	mockHandler "github.com/kotche/url-shortening-service/internal/app/transport/mock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -99,7 +98,7 @@ func TestHandlerHandleGet(t *testing.T) {
 			s := service.NewService(repo)
 			s.Gen = nil
 
-			h := handler.NewHandler(s, conf)
+			h := NewHandler(s, conf)
 
 			r := httptest.NewRequest(http.MethodGet, tt.fields.endpoint, nil)
 			w := httptest.NewRecorder()
@@ -187,7 +186,7 @@ func TestHandlerHandlePost(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := handler.NewHandler(s, conf)
+			h := NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.origin)
@@ -209,7 +208,7 @@ func TestHandlerHandlePost(t *testing.T) {
 func TestHandlerHandlePostEmptyBody(t *testing.T) {
 
 	conf := new(config.Config)
-	h := handler.NewHandler(nil, conf)
+	h := NewHandler(nil, conf)
 
 	body := bytes.NewBufferString("")
 
@@ -303,7 +302,7 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 
 			s := service.NewService(repo)
 			s.Gen = generator
-			h := handler.NewHandler(s, conf)
+			h := NewHandler(s, conf)
 			h.Cm = cm
 
 			body := bytes.NewBufferString(tt.fields.body)
@@ -389,7 +388,7 @@ func TestHandlerHandlePostJSONBadRequest(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
-			h := handler.NewHandler(nil, conf)
+			h := NewHandler(nil, conf)
 
 			body := bytes.NewBufferString(tt.fields.body)
 
@@ -474,7 +473,7 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			s.Gen = nil
 
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
-			h := handler.NewHandler(s, conf)
+			h := NewHandler(s, conf)
 			h.Cm = cm
 
 			r := httptest.NewRequest(http.MethodGet, "/api/user/urls", nil)
@@ -503,7 +502,7 @@ func TestHandlePostShortenBatch(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := handler.NewHandler(s, conf)
+	h := NewHandler(s, conf)
 
 	input := []model.InputCorrelationURL{
 		{
@@ -541,7 +540,7 @@ func TestHandleDeleteURLs(t *testing.T) {
 
 	s := service.NewService(fakeRepo)
 	s.SetDB(fakeRepo)
-	h := handler.NewHandler(s, conf)
+	h := NewHandler(s, conf)
 
 	input := []string{"1", "2", "3"}
 	inputJSON, _ := json.Marshal(input)
@@ -610,7 +609,7 @@ func TestHandleGetStats(t *testing.T) {
 			s.Gen = nil
 			s.SetDB(repo)
 
-			h := handler.NewHandler(s, cfg)
+			h := NewHandler(s, cfg)
 
 			r := httptest.NewRequest(http.MethodGet, "/api/internal/stats", nil)
 			r.Header.Set("X-Real-IP", cfg.TrustedSubnet)

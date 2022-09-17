@@ -27,7 +27,7 @@ func (f *FakeRepo) Close() error {
 	return nil
 }
 
-func (f *FakeRepo) Ping() error {
+func (f *FakeRepo) Ping(ctx context.Context) error {
 	return nil
 }
 

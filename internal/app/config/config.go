@@ -13,6 +13,7 @@ import (
 type Config struct {
 	ServerAddr    string   `env:"SERVER_ADDRESS" envDefault:"localhost:8080" json:"server_address"`
 	BaseURL       string   `env:"BASE_URL" envDefault:"http://localhost:8080" json:"base_url"`
+	GRPCPort      string   `env:"GRPC_PORT" envDefault:"3200" json:"grpc_port"`
 	FilePath      string   `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
 	DBConnect     string   `env:"DATABASE_DSN" json:"database_dsn"`
 	EnableHTTPS   bool     `env:"ENABLE_HTTPS" json:"enable_https"`
@@ -23,10 +24,13 @@ type Config struct {
 // NewConfig priority: env and flag are on the same level, the configuration file is below
 // example config file flag: -c ./internal/app/config/config.json
 func NewConfig() (*Config, error) {
-	var serverAddr, baseURL, filePath, dbConnect, enableHTTPSStr, configFilePath, trustedSubnet string
+	var (
+		serverAddr, baseURL, grpcPort, filePath, dbConnect, enableHTTPSStr, configFilePath, trustedSubnet string
+	)
 
 	regStringVar(&serverAddr, "a", serverAddr, "server address")
 	regStringVar(&baseURL, "b", baseURL, "base url")
+	regStringVar(&grpcPort, "ga", grpcPort, "grpc tcp port")
 	regStringVar(&filePath, "f", filePath, "file storage path")
 	regStringVar(&dbConnect, "d", dbConnect, "database connection")
 	regStringVar(&enableHTTPSStr, "s", enableHTTPSStr, "enable HTTPS")
@@ -50,6 +54,9 @@ func NewConfig() (*Config, error) {
 	}
 	if baseURL != "" {
 		conf.BaseURL = baseURL
+	}
+	if grpcPort != "" {
+		conf.GRPCPort = grpcPort
 	}
 	if filePath != "" {
 		conf.FilePath = filePath

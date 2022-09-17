@@ -105,8 +105,8 @@ func (d *DB) Close() error {
 	return nil
 }
 
-func (d *DB) Ping() error {
-	if err := d.conn.Ping(); err != nil {
+func (d *DB) Ping(ctx context.Context) error {
+	if err := d.conn.PingContext(ctx); err != nil {
 		return err
 	}
 	return nil

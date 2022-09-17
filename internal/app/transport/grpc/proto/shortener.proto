@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "/pb";
+
+message EmptyRequest {}
+
+message PingResponse {
+  int32 code = 1;
+}
+
+service Shortener{
+  rpc Ping(EmptyRequest) returns (PingResponse);
+}

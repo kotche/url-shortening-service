@@ -13,9 +13,9 @@ import (
 
 // Storage describes methods for storage in RAM , file system , and database
 type Storage interface {
-	Add(userID string, url *model.URL) error
-	GetByID(id string) (*model.URL, error)
-	GetUserURLs(userID string) ([]*model.URL, error)
+	Add(ctx context.Context, userID string, url *model.URL) error
+	GetByID(ctx context.Context, id string) (*model.URL, error)
+	GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error)
 	Close() error
 }
 
@@ -65,17 +65,17 @@ func (s *Service) SetDB(db Database) {
 	s.db = db
 }
 
-func (s *Service) GetURLModel(userID string, originURL string) (*model.URL, error) {
+func (s *Service) GetURLModel(ctx context.Context, userID string, originURL string) (*model.URL, error) {
 
 	var urlModel *model.URL
 
 	for {
 		shortURL := s.Gen.MakeShortURL()
-		urlModel, _ = s.st.GetByID(shortURL)
+		urlModel, _ = s.st.GetByID(ctx, shortURL)
 
 		if urlModel == nil {
 			urlModel = model.NewURL(originURL, shortURL)
-			err := s.st.Add(userID, urlModel)
+			err := s.st.Add(ctx, userID, urlModel)
 			if err != nil {
 				return nil, err
 			}
@@ -88,8 +88,8 @@ func (s *Service) GetURLModel(userID string, originURL string) (*model.URL, erro
 	return urlModel, nil
 }
 
-func (s *Service) GetURLModelByID(shortURL string) (*model.URL, error) {
-	urlModel, err := s.st.GetByID(shortURL)
+func (s *Service) GetURLModelByID(ctx context.Context, shortURL string) (*model.URL, error) {
+	urlModel, err := s.st.GetByID(ctx, shortURL)
 
 	if err != nil {
 		return nil, err
@@ -97,8 +97,8 @@ func (s *Service) GetURLModelByID(shortURL string) (*model.URL, error) {
 	return urlModel, nil
 }
 
-func (s *Service) GetUserURLs(userID string) ([]*model.URL, error) {
-	userURLs, err := s.st.GetUserURLs(userID)
+func (s *Service) GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error) {
+	userURLs, err := s.st.GetUserURLs(ctx, userID)
 
 	if err != nil {
 		return nil, err

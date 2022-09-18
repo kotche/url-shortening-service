@@ -89,7 +89,8 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.Service.GetURLModel(userID, originURL)
+	ctx := context.Background()
+	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
 		e := err.(model.ConflictURLError)
@@ -140,7 +141,8 @@ func (h *Handler) HandlePostJSON(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.Service.GetURLModel(userID, originURL)
+	ctx := context.Background()
+	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
 		e := err.(model.ConflictURLError)
@@ -173,7 +175,8 @@ func (h *Handler) HandlePostJSON(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
-	url, err := h.Service.GetURLModelByID(shortURL)
+	ctx := context.Background()
+	url, err := h.Service.GetURLModelByID(ctx, shortURL)
 
 	if errors.As(err, &model.GoneError{}) {
 		w.WriteHeader(http.StatusGone)
@@ -196,7 +199,8 @@ func (h *Handler) HandleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUrls, err := h.Service.GetUserURLs(userID)
+	ctx := context.Background()
+	userUrls, err := h.Service.GetUserURLs(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

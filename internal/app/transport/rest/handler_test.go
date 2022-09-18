@@ -92,8 +92,9 @@ func TestHandlerHandleGet(t *testing.T) {
 			defer control.Finish()
 
 			repo := mockStorage.NewMockStorage(control)
+			ctx := context.Background()
 
-			repo.EXPECT().GetByID(tt.fields.id).Return(tt.fields.URL, tt.fields.err).Times(1)
+			repo.EXPECT().GetByID(ctx, tt.fields.id).Return(tt.fields.URL, tt.fields.err).Times(1)
 
 			s := service.NewService(repo)
 			s.Gen = nil
@@ -177,9 +178,11 @@ func TestHandlerHandlePost(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
+			ctx := context.Background()
+
 			repo := mockStorage.NewMockStorage(control)
-			repo.EXPECT().Add(tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
-			repo.EXPECT().GetByID(tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
+			repo.EXPECT().Add(ctx, tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
+			repo.EXPECT().GetByID(ctx, tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
 
 			generator := mockService.Generator{Short: tt.fields.short}
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
@@ -293,9 +296,11 @@ func TestHandlerHandlePostJSON(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
+			ctx := context.Background()
+
 			repo := mockStorage.NewMockStorage(control)
-			repo.EXPECT().Add(tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
-			repo.EXPECT().GetByID(tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
+			repo.EXPECT().Add(ctx, tt.fields.userID, tt.fields.URLAdd).Return(tt.fields.err).Times(1)
+			repo.EXPECT().GetByID(ctx, tt.fields.short).Return(tt.fields.URLGet, tt.fields.err).Times(1)
 
 			generator := mockService.Generator{Short: tt.fields.short}
 			cm := mockHandler.CookieManager{Cookie: tt.fields.userID}
@@ -466,8 +471,10 @@ func TestHandlerHandleGetURLs(t *testing.T) {
 			control := gomock.NewController(t)
 			defer control.Finish()
 
+			ctx := context.Background()
+
 			repo := mockStorage.NewMockStorage(control)
-			repo.EXPECT().GetUserURLs(tt.fields.userID).Return(tt.fields.urls, tt.fields.err).Times(1)
+			repo.EXPECT().GetUserURLs(ctx, tt.fields.userID).Return(tt.fields.urls, tt.fields.err).Times(1)
 
 			s := service.NewService(repo)
 			s.Gen = nil

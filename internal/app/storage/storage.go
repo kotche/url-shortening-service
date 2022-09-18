@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/kotche/url-shortening-service/internal/app/model"
@@ -19,13 +20,13 @@ func NewUrls() *URLStorage {
 	}
 }
 
-func (m *URLStorage) Add(userID string, url *model.URL) error {
+func (m *URLStorage) Add(_ context.Context, userID string, url *model.URL) error {
 	m.urls[url.Short] = url
 	m.urlsUsers[userID] = append(m.urlsUsers[userID], url)
 	return nil
 }
 
-func (m *URLStorage) GetByID(id string) (*model.URL, error) {
+func (m *URLStorage) GetByID(_ context.Context, id string) (*model.URL, error) {
 
 	original, ok := m.urls[id]
 	if !ok {
@@ -35,7 +36,7 @@ func (m *URLStorage) GetByID(id string) (*model.URL, error) {
 	return original, nil
 }
 
-func (m *URLStorage) GetUserURLs(userID string) ([]*model.URL, error) {
+func (m *URLStorage) GetUserURLs(_ context.Context, userID string) ([]*model.URL, error) {
 	usersURLs := m.urlsUsers[userID]
 	return usersURLs, nil
 }

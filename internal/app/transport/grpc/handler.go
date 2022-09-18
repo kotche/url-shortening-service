@@ -47,7 +47,7 @@ func (h *Handler) Ping(ctx context.Context, r *pb.EmptyRequest) (*pb.PingRespons
 func (h *Handler) HandlePost(ctx context.Context, r *pb.HandlePostRequest) (*pb.HandlePostResponse, error) {
 	originURL := r.OriginURL
 	userID := h.Cm.GetUserID(ctx)
-	urlModel, err := h.Service.GetURLModel(userID, originURL)
+	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
 		e := err.(model.ConflictURLError)
@@ -67,7 +67,7 @@ func (h *Handler) HandlePost(ctx context.Context, r *pb.HandlePostRequest) (*pb.
 // HandleGet gets the original URL from a shortened link
 func (h *Handler) HandleGet(ctx context.Context, r *pb.HandleGetRequest) (*pb.HandleGetResponse, error) {
 	shortURL := r.ShortURL
-	url, err := h.Service.GetURLModelByID(shortURL)
+	url, err := h.Service.GetURLModelByID(ctx, shortURL)
 
 	if errors.As(err, &model.GoneError{}) {
 		return nil, status.Errorf(codes.NotFound, "handleGet error: %s", err.Error())

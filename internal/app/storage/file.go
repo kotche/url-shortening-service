@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -55,7 +56,7 @@ func NewFileStorage(fileName string) (*FileStorage, error) {
 	}, nil
 }
 
-func (f *FileStorage) Add(userID string, url *model.URL) error {
+func (f *FileStorage) Add(_ context.Context, userID string, url *model.URL) error {
 	mu := &sync.Mutex{}
 	mu.Lock()
 	defer mu.Unlock()
@@ -75,7 +76,7 @@ func (f *FileStorage) Add(userID string, url *model.URL) error {
 	return nil
 }
 
-func (f *FileStorage) GetByID(id string) (*model.URL, error) {
+func (f *FileStorage) GetByID(_ context.Context, id string) (*model.URL, error) {
 	original, ok := f.urls[id]
 	if !ok {
 		return nil, fmt.Errorf("key not found")
@@ -84,7 +85,7 @@ func (f *FileStorage) GetByID(id string) (*model.URL, error) {
 	return original, nil
 }
 
-func (f *FileStorage) GetUserURLs(userID string) ([]*model.URL, error) {
+func (f *FileStorage) GetUserURLs(_ context.Context, userID string) ([]*model.URL, error) {
 	usersURLs := f.urlsUsers[userID]
 	return usersURLs, nil
 }

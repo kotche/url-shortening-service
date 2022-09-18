@@ -24,9 +24,7 @@ func NewDB(DSN string) (*DB, error) {
 	return db, nil
 }
 
-func (d *DB) Add(userID string, url *model.URL) error {
-	ctx := context.Background()
-
+func (d *DB) Add(ctx context.Context, userID string, url *model.URL) error {
 	_, err := d.conn.ExecContext(ctx,
 		"INSERT INTO public.users(user_id) VALUES ($1) ON CONFLICT (user_id) DO UPDATE SET user_id=EXCLUDED.user_id;", userID)
 	if err != nil {
@@ -51,13 +49,13 @@ func (d *DB) Add(userID string, url *model.URL) error {
 	return nil
 }
 
-func (d *DB) GetByID(id string) (*model.URL, error) {
+func (d *DB) GetByID(ctx context.Context, id string) (*model.URL, error) {
 	var (
 		output  string
 		deleted bool
 	)
 
-	row := d.conn.QueryRow("SELECT origin,deleted FROM public.urls WHERE short=$1", id)
+	row := d.conn.QueryRowContext(ctx, "SELECT origin,deleted FROM public.urls WHERE short=$1", id)
 	row.Scan(&output, &deleted)
 
 	if deleted {
@@ -72,10 +70,10 @@ func (d *DB) GetByID(id string) (*model.URL, error) {
 	}
 }
 
-func (d *DB) GetUserURLs(userID string) ([]*model.URL, error) {
+func (d *DB) GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error) {
 	urls := make([]*model.URL, 0)
 
-	rows, err := d.conn.Query("SELECT short, origin FROM public.urls WHERE user_id=$1", userID)
+	rows, err := d.conn.QueryContext(ctx, "SELECT short, origin FROM public.urls WHERE user_id=$1", userID)
 	if err != nil {
 		return nil, err
 	}

@@ -22,12 +22,13 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShortenerClient interface {
-	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	HandlePost(ctx context.Context, in *HandlePostRequest, opts ...grpc.CallOption) (*HandlePostResponse, error)
 	HandleGet(ctx context.Context, in *HandleGetRequest, opts ...grpc.CallOption) (*HandleGetResponse, error)
-	HandleGetUserURLs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error)
+	HandleGetUserURLs(ctx context.Context, in *HandleGetUserURLsRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error)
 	HandlePostShortenBatch(ctx context.Context, in *HandlePostShortenBatchRequest, opts ...grpc.CallOption) (*HandlePostShortenBatchResponse, error)
 	HandleDeleteURLs(ctx context.Context, in *HandleDeleteURLsRequest, opts ...grpc.CallOption) (*HandleDeleteURLsResponse, error)
+	HandleGetStats(ctx context.Context, in *HandleGetStatsRequest, opts ...grpc.CallOption) (*HandleGetStatsResponse, error)
 }
 
 type shortenerClient struct {
@@ -38,7 +39,7 @@ func NewShortenerClient(cc grpc.ClientConnInterface) ShortenerClient {
 	return &shortenerClient{cc}
 }
 
-func (c *shortenerClient) Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*PingResponse, error) {
+func (c *shortenerClient) Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error) {
 	out := new(PingResponse)
 	err := c.cc.Invoke(ctx, "/shortener.Shortener/Ping", in, out, opts...)
 	if err != nil {
@@ -65,7 +66,7 @@ func (c *shortenerClient) HandleGet(ctx context.Context, in *HandleGetRequest, o
 	return out, nil
 }
 
-func (c *shortenerClient) HandleGetUserURLs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error) {
+func (c *shortenerClient) HandleGetUserURLs(ctx context.Context, in *HandleGetUserURLsRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error) {
 	out := new(HandleGetUserURLsResponse)
 	err := c.cc.Invoke(ctx, "/shortener.Shortener/HandleGetUserURLs", in, out, opts...)
 	if err != nil {
@@ -92,16 +93,26 @@ func (c *shortenerClient) HandleDeleteURLs(ctx context.Context, in *HandleDelete
 	return out, nil
 }
 
+func (c *shortenerClient) HandleGetStats(ctx context.Context, in *HandleGetStatsRequest, opts ...grpc.CallOption) (*HandleGetStatsResponse, error) {
+	out := new(HandleGetStatsResponse)
+	err := c.cc.Invoke(ctx, "/shortener.Shortener/HandleGetStats", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortenerServer is the server API for Shortener service.
 // All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
 type ShortenerServer interface {
-	Ping(context.Context, *EmptyRequest) (*PingResponse, error)
+	Ping(context.Context, *PingRequest) (*PingResponse, error)
 	HandlePost(context.Context, *HandlePostRequest) (*HandlePostResponse, error)
 	HandleGet(context.Context, *HandleGetRequest) (*HandleGetResponse, error)
-	HandleGetUserURLs(context.Context, *EmptyRequest) (*HandleGetUserURLsResponse, error)
+	HandleGetUserURLs(context.Context, *HandleGetUserURLsRequest) (*HandleGetUserURLsResponse, error)
 	HandlePostShortenBatch(context.Context, *HandlePostShortenBatchRequest) (*HandlePostShortenBatchResponse, error)
 	HandleDeleteURLs(context.Context, *HandleDeleteURLsRequest) (*HandleDeleteURLsResponse, error)
+	HandleGetStats(context.Context, *HandleGetStatsRequest) (*HandleGetStatsResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
 
@@ -109,7 +120,7 @@ type ShortenerServer interface {
 type UnimplementedShortenerServer struct {
 }
 
-func (UnimplementedShortenerServer) Ping(context.Context, *EmptyRequest) (*PingResponse, error) {
+func (UnimplementedShortenerServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
 func (UnimplementedShortenerServer) HandlePost(context.Context, *HandlePostRequest) (*HandlePostResponse, error) {
@@ -118,7 +129,7 @@ func (UnimplementedShortenerServer) HandlePost(context.Context, *HandlePostReque
 func (UnimplementedShortenerServer) HandleGet(context.Context, *HandleGetRequest) (*HandleGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleGet not implemented")
 }
-func (UnimplementedShortenerServer) HandleGetUserURLs(context.Context, *EmptyRequest) (*HandleGetUserURLsResponse, error) {
+func (UnimplementedShortenerServer) HandleGetUserURLs(context.Context, *HandleGetUserURLsRequest) (*HandleGetUserURLsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleGetUserURLs not implemented")
 }
 func (UnimplementedShortenerServer) HandlePostShortenBatch(context.Context, *HandlePostShortenBatchRequest) (*HandlePostShortenBatchResponse, error) {
@@ -126,6 +137,9 @@ func (UnimplementedShortenerServer) HandlePostShortenBatch(context.Context, *Han
 }
 func (UnimplementedShortenerServer) HandleDeleteURLs(context.Context, *HandleDeleteURLsRequest) (*HandleDeleteURLsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleDeleteURLs not implemented")
+}
+func (UnimplementedShortenerServer) HandleGetStats(context.Context, *HandleGetStatsRequest) (*HandleGetStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleGetStats not implemented")
 }
 func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
 
@@ -141,7 +155,7 @@ func RegisterShortenerServer(s grpc.ServiceRegistrar, srv ShortenerServer) {
 }
 
 func _Shortener_Ping_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyRequest)
+	in := new(PingRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -153,7 +167,7 @@ func _Shortener_Ping_Handler(srv interface{}, ctx context.Context, dec func(inte
 		FullMethod: "/shortener.Shortener/Ping",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).Ping(ctx, req.(*EmptyRequest))
+		return srv.(ShortenerServer).Ping(ctx, req.(*PingRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -195,7 +209,7 @@ func _Shortener_HandleGet_Handler(srv interface{}, ctx context.Context, dec func
 }
 
 func _Shortener_HandleGetUserURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmptyRequest)
+	in := new(HandleGetUserURLsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -207,7 +221,7 @@ func _Shortener_HandleGetUserURLs_Handler(srv interface{}, ctx context.Context, 
 		FullMethod: "/shortener.Shortener/HandleGetUserURLs",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ShortenerServer).HandleGetUserURLs(ctx, req.(*EmptyRequest))
+		return srv.(ShortenerServer).HandleGetUserURLs(ctx, req.(*HandleGetUserURLsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -248,6 +262,24 @@ func _Shortener_HandleDeleteURLs_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Shortener_HandleGetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandleGetStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).HandleGetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/shortener.Shortener/HandleGetStats",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).HandleGetStats(ctx, req.(*HandleGetStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -278,6 +310,10 @@ var Shortener_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HandleDeleteURLs",
 			Handler:    _Shortener_HandleDeleteURLs_Handler,
+		},
+		{
+			MethodName: "HandleGetStats",
+			Handler:    _Shortener_HandleGetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -35,7 +35,7 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 }
 
 // Ping check DB connection
-func (h *Handler) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.PingResponse, error) {
+func (h *Handler) Ping(ctx context.Context, r *pb.PingRequest) (*pb.PingResponse, error) {
 	if err := h.Service.Ping(ctx); err != nil {
 		return nil, status.Errorf(codes.Internal, "ping error: %s", err.Error())
 	}
@@ -88,7 +88,7 @@ func (h *Handler) HandleGet(ctx context.Context, r *pb.HandleGetRequest) (*pb.Ha
 }
 
 // HandleGetUserURLs gets all shortened links by the user
-func (h *Handler) HandleGetUserURLs(ctx context.Context, _ *pb.EmptyRequest) (*pb.HandleGetUserURLsResponse, error) {
+func (h *Handler) HandleGetUserURLs(ctx context.Context, r *pb.HandleGetUserURLsRequest) (*pb.HandleGetUserURLsResponse, error) {
 	userID := h.Cm.GetUserID(ctx)
 	if userID == "" {
 		return nil, status.Errorf(codes.Internal, "HandleGetUserURLs error: %s", "user ID is empty")
@@ -172,4 +172,13 @@ func (h *Handler) HandleDeleteURLs(ctx context.Context, r *pb.HandleDeleteURLsRe
 	return &response, nil
 }
 
-//HandleGetStats
+// HandleGetStats returns the number of shortened urls and the number of users in the service
+func (h *Handler) HandleGetStats(ctx context.Context, r *pb.HandleGetStatsRequest) (*pb.HandleGetStatsResponse, error) {
+	stats, err := h.Service.GetStats(ctx)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "HandleGetStats error: %s", err.Error())
+	}
+
+	response := pb.HandleGetStatsResponse{Urls: int64(stats.NumberOfURLs), Users: int64(stats.NumberOfUsers)}
+	return &response, nil
+}

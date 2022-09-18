@@ -4,7 +4,7 @@ package shortener;
 
 option go_package = "/pb";
 
-message EmptyRequest {}
+message PingRequest {}
 
 message PingResponse {
   int32 status = 1;
@@ -32,6 +32,8 @@ message SetURLsResponse {
   string shortURL = 1;
   string originURL = 2;
 }
+
+message HandleGetUserURLsRequest{}
 
 message HandleGetUserURLsResponse {
   repeated SetURLsResponse setURLs = 1;
@@ -64,11 +66,19 @@ message HandleDeleteURLsResponse {
   int32 status = 1;
 }
 
+message HandleGetStatsRequest{}
+
+message HandleGetStatsResponse {
+  int64 urls = 1;
+  int64 users = 2;
+}
+
 service Shortener {
-  rpc Ping(EmptyRequest) returns (PingResponse);
+  rpc Ping(PingRequest) returns (PingResponse);
   rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
   rpc HandleGet(HandleGetRequest) returns (HandleGetResponse);
-  rpc HandleGetUserURLs(EmptyRequest) returns (HandleGetUserURLsResponse);
+  rpc HandleGetUserURLs(HandleGetUserURLsRequest) returns (HandleGetUserURLsResponse);
   rpc HandlePostShortenBatch(HandlePostShortenBatchRequest) returns (HandlePostShortenBatchResponse);
   rpc HandleDeleteURLs(HandleDeleteURLsRequest) returns (HandleDeleteURLsResponse);
+  rpc HandleGetStats(HandleGetStatsRequest) returns (HandleGetStatsResponse);
 }

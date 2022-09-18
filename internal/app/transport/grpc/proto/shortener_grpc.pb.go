@@ -25,6 +25,7 @@ type ShortenerClient interface {
 	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*PingResponse, error)
 	HandlePost(ctx context.Context, in *HandlePostRequest, opts ...grpc.CallOption) (*HandlePostResponse, error)
 	HandleGet(ctx context.Context, in *HandleGetRequest, opts ...grpc.CallOption) (*HandleGetResponse, error)
+	HandleGetUserURLs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error)
 }
 
 type shortenerClient struct {
@@ -62,6 +63,15 @@ func (c *shortenerClient) HandleGet(ctx context.Context, in *HandleGetRequest, o
 	return out, nil
 }
 
+func (c *shortenerClient) HandleGetUserURLs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error) {
+	out := new(HandleGetUserURLsResponse)
+	err := c.cc.Invoke(ctx, "/shortener.Shortener/HandleGetUserURLs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortenerServer is the server API for Shortener service.
 // All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
@@ -69,6 +79,7 @@ type ShortenerServer interface {
 	Ping(context.Context, *EmptyRequest) (*PingResponse, error)
 	HandlePost(context.Context, *HandlePostRequest) (*HandlePostResponse, error)
 	HandleGet(context.Context, *HandleGetRequest) (*HandleGetResponse, error)
+	HandleGetUserURLs(context.Context, *EmptyRequest) (*HandleGetUserURLsResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
 
@@ -84,6 +95,9 @@ func (UnimplementedShortenerServer) HandlePost(context.Context, *HandlePostReque
 }
 func (UnimplementedShortenerServer) HandleGet(context.Context, *HandleGetRequest) (*HandleGetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandleGet not implemented")
+}
+func (UnimplementedShortenerServer) HandleGetUserURLs(context.Context, *EmptyRequest) (*HandleGetUserURLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleGetUserURLs not implemented")
 }
 func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
 
@@ -152,6 +166,24 @@ func _Shortener_HandleGet_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Shortener_HandleGetUserURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmptyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).HandleGetUserURLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/shortener.Shortener/HandleGetUserURLs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).HandleGetUserURLs(ctx, req.(*EmptyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -170,6 +202,10 @@ var Shortener_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HandleGet",
 			Handler:    _Shortener_HandleGet_Handler,
+		},
+		{
+			MethodName: "HandleGetUserURLs",
+			Handler:    _Shortener_HandleGetUserURLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

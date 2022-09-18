@@ -35,7 +35,7 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 }
 
 // Ping check DB connection
-func (h *Handler) Ping(ctx context.Context, r *pb.EmptyRequest) (*pb.PingResponse, error) {
+func (h *Handler) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.PingResponse, error) {
 	if err := h.Service.Ping(ctx); err != nil {
 		return nil, status.Errorf(codes.Internal, "ping error: %s", err.Error())
 	}
@@ -83,4 +83,33 @@ func (h *Handler) HandleGet(ctx context.Context, r *pb.HandleGetRequest) (*pb.Ha
 	return &response, err
 }
 
-//HandleGetUserURLs, HandlePostShortenBatch, HandleDeleteURLs, HandleGetStats
+// HandleGetUserURLs gets all shortened links by the user
+func (h *Handler) HandleGetUserURLs(ctx context.Context, _ *pb.EmptyRequest) (*pb.HandleGetUserURLsResponse, error) {
+	userID := h.Cm.GetUserID(ctx)
+
+	if userID == "" {
+		return nil, status.Errorf(codes.Internal, "HandleGetUserURLs error: %s", "user ID is empty")
+	}
+
+	userUrls, err := h.Service.GetUserURLs(ctx, userID)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "HandleGetUserURLs error: %s", err.Error())
+	}
+
+	if len(userUrls) == 0 {
+		return nil, status.Errorf(codes.NotFound, "HandleGetUserURLs error: %s", "no shortened URLs")
+	}
+
+	response := pb.HandleGetUserURLsResponse{}
+	for _, v := range userUrls {
+		responseURL := pb.SetURLsResponse{
+			ShortURL:  h.Conf.BaseURL + "/" + v.Short,
+			OriginURL: v.Origin,
+		}
+		response.SetURLs = append(response.SetURLs, &responseURL)
+	}
+
+	return &response, nil
+}
+
+//HandlePostShortenBatch, HandleDeleteURLs, HandleGetStats

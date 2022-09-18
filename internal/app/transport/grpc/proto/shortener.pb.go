@@ -309,6 +309,108 @@ func (x *HandleGetResponse) GetOriginURL() string {
 	return ""
 }
 
+type SetURLsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ShortURL  string `protobuf:"bytes,1,opt,name=shortURL,proto3" json:"shortURL,omitempty"`
+	OriginURL string `protobuf:"bytes,2,opt,name=originURL,proto3" json:"originURL,omitempty"`
+}
+
+func (x *SetURLsResponse) Reset() {
+	*x = SetURLsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SetURLsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetURLsResponse) ProtoMessage() {}
+
+func (x *SetURLsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetURLsResponse.ProtoReflect.Descriptor instead.
+func (*SetURLsResponse) Descriptor() ([]byte, []int) {
+	return file_internal_app_transport_grpc_proto_shortener_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *SetURLsResponse) GetShortURL() string {
+	if x != nil {
+		return x.ShortURL
+	}
+	return ""
+}
+
+func (x *SetURLsResponse) GetOriginURL() string {
+	if x != nil {
+		return x.OriginURL
+	}
+	return ""
+}
+
+type HandleGetUserURLsResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	SetURLs []*SetURLsResponse `protobuf:"bytes,2,rep,name=setURLs,proto3" json:"setURLs,omitempty"`
+}
+
+func (x *HandleGetUserURLsResponse) Reset() {
+	*x = HandleGetUserURLsResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *HandleGetUserURLsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HandleGetUserURLsResponse) ProtoMessage() {}
+
+func (x *HandleGetUserURLsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HandleGetUserURLsResponse.ProtoReflect.Descriptor instead.
+func (*HandleGetUserURLsResponse) Descriptor() ([]byte, []int) {
+	return file_internal_app_transport_grpc_proto_shortener_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *HandleGetUserURLsResponse) GetSetURLs() []*SetURLsResponse {
+	if x != nil {
+		return x.SetURLs
+	}
+	return nil
+}
+
 var File_internal_app_transport_grpc_proto_shortener_proto protoreflect.FileDescriptor
 
 var file_internal_app_transport_grpc_proto_shortener_proto_rawDesc = []byte{
@@ -335,7 +437,17 @@ var file_internal_app_transport_grpc_proto_shortener_proto_rawDesc = []byte{
 	0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x05, 0x52, 0x06, 0x73, 0x74,
 	0x61, 0x74, 0x75, 0x73, 0x12, 0x1c, 0x0a, 0x09, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x55, 0x52,
 	0x4c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x55,
-	0x52, 0x4c, 0x32, 0xd8, 0x01, 0x0a, 0x09, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72,
+	0x52, 0x4c, 0x22, 0x4b, 0x0a, 0x0f, 0x53, 0x65, 0x74, 0x55, 0x52, 0x4c, 0x73, 0x52, 0x65, 0x73,
+	0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x55, 0x52,
+	0x4c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x55, 0x52,
+	0x4c, 0x12, 0x1c, 0x0a, 0x09, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x55, 0x52, 0x4c, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x6f, 0x72, 0x69, 0x67, 0x69, 0x6e, 0x55, 0x52, 0x4c, 0x22,
+	0x51, 0x0a, 0x19, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72,
+	0x55, 0x52, 0x4c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x34, 0x0a, 0x07,
+	0x73, 0x65, 0x74, 0x55, 0x52, 0x4c, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
+	0x73, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x53, 0x65, 0x74, 0x55, 0x52, 0x4c,
+	0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x52, 0x07, 0x73, 0x65, 0x74, 0x55, 0x52,
+	0x4c, 0x73, 0x32, 0xac, 0x02, 0x0a, 0x09, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72,
 	0x12, 0x38, 0x0a, 0x04, 0x50, 0x69, 0x6e, 0x67, 0x12, 0x17, 0x2e, 0x73, 0x68, 0x6f, 0x72, 0x74,
 	0x65, 0x6e, 0x65, 0x72, 0x2e, 0x45, 0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73,
 	0x74, 0x1a, 0x17, 0x2e, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x50, 0x69,
@@ -348,8 +460,13 @@ var file_internal_app_transport_grpc_proto_shortener_proto_rawDesc = []byte{
 	0x65, 0x74, 0x12, 0x1b, 0x2e, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x48,
 	0x61, 0x6e, 0x64, 0x6c, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a,
 	0x1c, 0x2e, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x48, 0x61, 0x6e, 0x64,
-	0x6c, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42, 0x05, 0x5a,
-	0x03, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x6c, 0x65, 0x47, 0x65, 0x74, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x52, 0x0a,
+	0x11, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x47, 0x65, 0x74, 0x55, 0x73, 0x65, 0x72, 0x55, 0x52,
+	0x4c, 0x73, 0x12, 0x17, 0x2e, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x45,
+	0x6d, 0x70, 0x74, 0x79, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x1a, 0x24, 0x2e, 0x73, 0x68,
+	0x6f, 0x72, 0x74, 0x65, 0x6e, 0x65, 0x72, 0x2e, 0x48, 0x61, 0x6e, 0x64, 0x6c, 0x65, 0x47, 0x65,
+	0x74, 0x55, 0x73, 0x65, 0x72, 0x55, 0x52, 0x4c, 0x73, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73,
+	0x65, 0x42, 0x05, 0x5a, 0x03, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -364,27 +481,32 @@ func file_internal_app_transport_grpc_proto_shortener_proto_rawDescGZIP() []byte
 	return file_internal_app_transport_grpc_proto_shortener_proto_rawDescData
 }
 
-var file_internal_app_transport_grpc_proto_shortener_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_internal_app_transport_grpc_proto_shortener_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_internal_app_transport_grpc_proto_shortener_proto_goTypes = []interface{}{
-	(*EmptyRequest)(nil),       // 0: shortener.EmptyRequest
-	(*PingResponse)(nil),       // 1: shortener.PingResponse
-	(*HandlePostRequest)(nil),  // 2: shortener.HandlePostRequest
-	(*HandlePostResponse)(nil), // 3: shortener.HandlePostResponse
-	(*HandleGetRequest)(nil),   // 4: shortener.HandleGetRequest
-	(*HandleGetResponse)(nil),  // 5: shortener.HandleGetResponse
+	(*EmptyRequest)(nil),              // 0: shortener.EmptyRequest
+	(*PingResponse)(nil),              // 1: shortener.PingResponse
+	(*HandlePostRequest)(nil),         // 2: shortener.HandlePostRequest
+	(*HandlePostResponse)(nil),        // 3: shortener.HandlePostResponse
+	(*HandleGetRequest)(nil),          // 4: shortener.HandleGetRequest
+	(*HandleGetResponse)(nil),         // 5: shortener.HandleGetResponse
+	(*SetURLsResponse)(nil),           // 6: shortener.SetURLsResponse
+	(*HandleGetUserURLsResponse)(nil), // 7: shortener.HandleGetUserURLsResponse
 }
 var file_internal_app_transport_grpc_proto_shortener_proto_depIdxs = []int32{
-	0, // 0: shortener.Shortener.Ping:input_type -> shortener.EmptyRequest
-	2, // 1: shortener.Shortener.HandlePost:input_type -> shortener.HandlePostRequest
-	4, // 2: shortener.Shortener.HandleGet:input_type -> shortener.HandleGetRequest
-	1, // 3: shortener.Shortener.Ping:output_type -> shortener.PingResponse
-	3, // 4: shortener.Shortener.HandlePost:output_type -> shortener.HandlePostResponse
-	5, // 5: shortener.Shortener.HandleGet:output_type -> shortener.HandleGetResponse
-	3, // [3:6] is the sub-list for method output_type
-	0, // [0:3] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6, // 0: shortener.HandleGetUserURLsResponse.setURLs:type_name -> shortener.SetURLsResponse
+	0, // 1: shortener.Shortener.Ping:input_type -> shortener.EmptyRequest
+	2, // 2: shortener.Shortener.HandlePost:input_type -> shortener.HandlePostRequest
+	4, // 3: shortener.Shortener.HandleGet:input_type -> shortener.HandleGetRequest
+	0, // 4: shortener.Shortener.HandleGetUserURLs:input_type -> shortener.EmptyRequest
+	1, // 5: shortener.Shortener.Ping:output_type -> shortener.PingResponse
+	3, // 6: shortener.Shortener.HandlePost:output_type -> shortener.HandlePostResponse
+	5, // 7: shortener.Shortener.HandleGet:output_type -> shortener.HandleGetResponse
+	7, // 8: shortener.Shortener.HandleGetUserURLs:output_type -> shortener.HandleGetUserURLsResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_internal_app_transport_grpc_proto_shortener_proto_init() }
@@ -465,6 +587,30 @@ func file_internal_app_transport_grpc_proto_shortener_proto_init() {
 				return nil
 			}
 		}
+		file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SetURLsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_internal_app_transport_grpc_proto_shortener_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*HandleGetUserURLsResponse); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -472,7 +618,7 @@ func file_internal_app_transport_grpc_proto_shortener_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_internal_app_transport_grpc_proto_shortener_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -19,17 +19,27 @@ message HandlePostResponse {
   string shortenURL = 2;
 }
 
-message HandleGetRequest{
+message HandleGetRequest {
   string shortURL = 1;
 }
 
-message HandleGetResponse{
+message HandleGetResponse {
   int32 status = 1;
   string originURL = 2;
+}
+
+message SetURLsResponse {
+  string shortURL = 1;
+  string originURL = 2;
+}
+
+message HandleGetUserURLsResponse {
+  repeated SetURLsResponse setURLs = 2;
 }
 
 service Shortener{
   rpc Ping(EmptyRequest) returns (PingResponse);
   rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
   rpc HandleGet(HandleGetRequest) returns (HandleGetResponse);
+  rpc HandleGetUserURLs(EmptyRequest) returns (HandleGetUserURLsResponse);
 }

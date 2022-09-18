@@ -247,7 +247,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// HandlePostShortenBatch accepts in the request body a set of URLs for abbreviation
+// HandlePostShortenBatch accepts in the request body a set of URLs for shorten
 func (h *Handler) HandlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)

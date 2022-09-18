@@ -45,8 +45,12 @@ func (h *Handler) Ping(ctx context.Context, _ *pb.EmptyRequest) (*pb.PingRespons
 
 // HandlePost accepts the URL string in the request body and returns its shorten version.
 func (h *Handler) HandlePost(ctx context.Context, r *pb.HandlePostRequest) (*pb.HandlePostResponse, error) {
-	originURL := r.OriginURL
 	userID := h.Cm.GetUserID(ctx)
+	if userID == "" {
+		return nil, status.Errorf(codes.Internal, "HandlePost error: %s", "user ID is empty")
+	}
+
+	originURL := r.OriginURL
 	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
@@ -86,7 +90,6 @@ func (h *Handler) HandleGet(ctx context.Context, r *pb.HandleGetRequest) (*pb.Ha
 // HandleGetUserURLs gets all shortened links by the user
 func (h *Handler) HandleGetUserURLs(ctx context.Context, _ *pb.EmptyRequest) (*pb.HandleGetUserURLsResponse, error) {
 	userID := h.Cm.GetUserID(ctx)
-
 	if userID == "" {
 		return nil, status.Errorf(codes.Internal, "HandleGetUserURLs error: %s", "user ID is empty")
 	}
@@ -112,4 +115,41 @@ func (h *Handler) HandleGetUserURLs(ctx context.Context, _ *pb.EmptyRequest) (*p
 	return &response, nil
 }
 
-//HandlePostShortenBatch, HandleDeleteURLs, HandleGetStats
+// HandlePostShortenBatch accepts in the request body a set of URLs for shorten
+func (h *Handler) HandlePostShortenBatch(ctx context.Context, r *pb.HandlePostShortenBatchRequest) (*pb.HandlePostShortenBatchResponse, error) {
+	userID := h.Cm.GetUserID(ctx)
+	if userID == "" {
+		return nil, status.Errorf(codes.Internal, "HandlePostShortenBatch error: %s", "user ID is empty")
+	}
+
+	if len(r.CorrelationURL) == 0 {
+		return nil, status.Errorf(codes.Internal, "HandlePostShortenBatch error: %s", "correlation URL empty")
+	}
+
+	inputDataList := make([]model.InputCorrelationURL, 0, len(r.CorrelationURL))
+
+	for _, corURLInput := range r.CorrelationURL {
+		inputDataList = append(inputDataList, model.InputCorrelationURL{
+			CorrelationID: corURLInput.Id,
+			Origin:        corURLInput.OriginalURL,
+		})
+	}
+
+	outputDataList, err := h.Service.ShortenBatch(ctx, userID, inputDataList)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "HandlePostShortenBatch error: %s", err.Error())
+	}
+
+	response := pb.HandlePostShortenBatchResponse{}
+	for ind := range outputDataList {
+		response.CorrelationURL = append(response.CorrelationURL, &pb.CorrelationURLResponse{
+			Id:       outputDataList[ind].CorrelationID,
+			ShortURL: h.Conf.BaseURL + "/" + outputDataList[ind].Short,
+		})
+	}
+	response.Status = int32(http.StatusCreated)
+
+	return &response, nil
+}
+
+//HandleDeleteURLs, HandleGetStats

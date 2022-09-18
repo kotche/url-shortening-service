@@ -34,7 +34,26 @@ message SetURLsResponse {
 }
 
 message HandleGetUserURLsResponse {
-  repeated SetURLsResponse setURLs = 2;
+  repeated SetURLsResponse setURLs = 1;
+}
+
+message CorrelationURLRequest {
+  string id = 1;
+  string originalURL = 2;
+}
+
+message CorrelationURLResponse{
+  string id = 1;
+  string shortURL = 2;
+}
+
+message HandlePostShortenBatchRequest{
+  repeated CorrelationURLRequest correlationURL = 1;
+}
+
+message HandlePostShortenBatchResponse{
+  int32 status = 1;
+  repeated CorrelationURLResponse correlationURL = 2;
 }
 
 service Shortener{
@@ -42,4 +61,5 @@ service Shortener{
   rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
   rpc HandleGet(HandleGetRequest) returns (HandleGetResponse);
   rpc HandleGetUserURLs(EmptyRequest) returns (HandleGetUserURLsResponse);
+  rpc HandlePostShortenBatch(HandlePostShortenBatchRequest) returns (HandlePostShortenBatchResponse);
 }

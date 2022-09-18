@@ -152,4 +152,24 @@ func (h *Handler) HandlePostShortenBatch(ctx context.Context, r *pb.HandlePostSh
 	return &response, nil
 }
 
-//HandleDeleteURLs, HandleGetStats
+// HandleDeleteURLs accepts a list of shortened URL to delete
+func (h *Handler) HandleDeleteURLs(ctx context.Context, r *pb.HandleDeleteURLsRequest) (*pb.HandleDeleteURLsResponse, error) {
+	userID := h.Cm.GetUserID(ctx)
+	if userID == "" {
+		return nil, status.Errorf(codes.Internal, "HandleDeleteURLs error: %s", "user ID is empty")
+	}
+
+	toDelete := make([]string, 0, len(r.DeleteURLs))
+	for _, delURL := range r.DeleteURLs {
+		toDelete = append(toDelete, delURL)
+	}
+
+	go func() {
+		h.Service.DeleteURLs(userID, toDelete)
+	}()
+
+	response := pb.HandleDeleteURLsResponse{Status: int32(http.StatusAccepted)}
+	return &response, nil
+}
+
+//HandleGetStats

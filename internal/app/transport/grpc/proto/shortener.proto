@@ -42,24 +42,33 @@ message CorrelationURLRequest {
   string originalURL = 2;
 }
 
-message CorrelationURLResponse{
+message CorrelationURLResponse {
   string id = 1;
   string shortURL = 2;
 }
 
-message HandlePostShortenBatchRequest{
+message HandlePostShortenBatchRequest {
   repeated CorrelationURLRequest correlationURL = 1;
 }
 
-message HandlePostShortenBatchResponse{
+message HandlePostShortenBatchResponse {
   int32 status = 1;
   repeated CorrelationURLResponse correlationURL = 2;
 }
 
-service Shortener{
+message HandleDeleteURLsRequest {
+  repeated string deleteURLs = 1;
+}
+
+message HandleDeleteURLsResponse {
+  int32 status = 1;
+}
+
+service Shortener {
   rpc Ping(EmptyRequest) returns (PingResponse);
   rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
   rpc HandleGet(HandleGetRequest) returns (HandleGetResponse);
   rpc HandleGetUserURLs(EmptyRequest) returns (HandleGetUserURLsResponse);
   rpc HandlePostShortenBatch(HandlePostShortenBatchRequest) returns (HandlePostShortenBatchResponse);
+  rpc HandleDeleteURLs(HandleDeleteURLsRequest) returns (HandleDeleteURLsResponse);
 }

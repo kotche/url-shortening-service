@@ -27,6 +27,7 @@ type ShortenerClient interface {
 	HandleGet(ctx context.Context, in *HandleGetRequest, opts ...grpc.CallOption) (*HandleGetResponse, error)
 	HandleGetUserURLs(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*HandleGetUserURLsResponse, error)
 	HandlePostShortenBatch(ctx context.Context, in *HandlePostShortenBatchRequest, opts ...grpc.CallOption) (*HandlePostShortenBatchResponse, error)
+	HandleDeleteURLs(ctx context.Context, in *HandleDeleteURLsRequest, opts ...grpc.CallOption) (*HandleDeleteURLsResponse, error)
 }
 
 type shortenerClient struct {
@@ -82,6 +83,15 @@ func (c *shortenerClient) HandlePostShortenBatch(ctx context.Context, in *Handle
 	return out, nil
 }
 
+func (c *shortenerClient) HandleDeleteURLs(ctx context.Context, in *HandleDeleteURLsRequest, opts ...grpc.CallOption) (*HandleDeleteURLsResponse, error) {
+	out := new(HandleDeleteURLsResponse)
+	err := c.cc.Invoke(ctx, "/shortener.Shortener/HandleDeleteURLs", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortenerServer is the server API for Shortener service.
 // All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
@@ -91,6 +101,7 @@ type ShortenerServer interface {
 	HandleGet(context.Context, *HandleGetRequest) (*HandleGetResponse, error)
 	HandleGetUserURLs(context.Context, *EmptyRequest) (*HandleGetUserURLsResponse, error)
 	HandlePostShortenBatch(context.Context, *HandlePostShortenBatchRequest) (*HandlePostShortenBatchResponse, error)
+	HandleDeleteURLs(context.Context, *HandleDeleteURLsRequest) (*HandleDeleteURLsResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
 
@@ -112,6 +123,9 @@ func (UnimplementedShortenerServer) HandleGetUserURLs(context.Context, *EmptyReq
 }
 func (UnimplementedShortenerServer) HandlePostShortenBatch(context.Context, *HandlePostShortenBatchRequest) (*HandlePostShortenBatchResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method HandlePostShortenBatch not implemented")
+}
+func (UnimplementedShortenerServer) HandleDeleteURLs(context.Context, *HandleDeleteURLsRequest) (*HandleDeleteURLsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandleDeleteURLs not implemented")
 }
 func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
 
@@ -216,6 +230,24 @@ func _Shortener_HandlePostShortenBatch_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Shortener_HandleDeleteURLs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandleDeleteURLsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).HandleDeleteURLs(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/shortener.Shortener/HandleDeleteURLs",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).HandleDeleteURLs(ctx, req.(*HandleDeleteURLsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -242,6 +274,10 @@ var Shortener_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "HandlePostShortenBatch",
 			Handler:    _Shortener_HandlePostShortenBatch_Handler,
+		},
+		{
+			MethodName: "HandleDeleteURLs",
+			Handler:    _Shortener_HandleDeleteURLs_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

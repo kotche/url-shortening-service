@@ -61,5 +61,26 @@ func (h *Handler) HandlePost(ctx context.Context, r *pb.HandlePostRequest) (*pb.
 		ShortenURL: h.Conf.BaseURL + "/" + urlModel.Short,
 	}
 
+	return &response, nil
+}
+
+// HandleGet gets the original URL from a shortened link
+func (h *Handler) HandleGet(ctx context.Context, r *pb.HandleGetRequest) (*pb.HandleGetResponse, error) {
+	shortURL := r.ShortURL
+	url, err := h.Service.GetURLModelByID(shortURL)
+
+	if errors.As(err, &model.GoneError{}) {
+		return nil, status.Errorf(codes.NotFound, "handleGet error: %s", err.Error())
+	} else if err != nil {
+		return nil, status.Errorf(codes.Internal, "handleGet error: %s", err.Error())
+	}
+
+	response := pb.HandleGetResponse{
+		Status:    int32(http.StatusTemporaryRedirect),
+		OriginURL: url.Origin,
+	}
+
 	return &response, err
 }
+
+//HandleGetUserURLs, HandlePostShortenBatch, HandleDeleteURLs, HandleGetStats

@@ -160,9 +160,7 @@ func (h *Handler) HandleDeleteURLs(ctx context.Context, r *pb.HandleDeleteURLsRe
 	}
 
 	toDelete := make([]string, 0, len(r.DeleteURLs))
-	for _, delURL := range r.DeleteURLs {
-		toDelete = append(toDelete, delURL)
-	}
+	toDelete = append(toDelete, r.DeleteURLs...)
 
 	go func() {
 		h.Service.DeleteURLs(userID, toDelete)

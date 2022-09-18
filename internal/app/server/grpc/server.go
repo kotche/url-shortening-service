@@ -7,6 +7,7 @@ import (
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
 	grpcHandler "github.com/kotche/url-shortening-service/internal/app/transport/grpc"
+	"github.com/kotche/url-shortening-service/internal/app/transport/grpc/interceptors"
 	pb "github.com/kotche/url-shortening-service/internal/app/transport/grpc/proto"
 	"google.golang.org/grpc"
 )
@@ -18,10 +19,12 @@ type Server struct {
 }
 
 func NewServer(cfg *config.Config, handler *grpcHandler.Handler) *Server {
+	authInterceptor := grpc.UnaryInterceptor(interceptors.UnaryCookieInterceptor)
+
 	return &Server{
 		cfg:        cfg,
 		handler:    handler,
-		grpcServer: grpc.NewServer(),
+		grpcServer: grpc.NewServer(authInterceptor),
 	}
 }
 

@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
@@ -9,6 +10,7 @@ import (
 	"net/http"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
+	"google.golang.org/grpc/metadata"
 )
 
 // GetCookieParam returns the cookie parameter by name
@@ -51,4 +53,25 @@ func GetUserIDFromCookie(CookieID string) string {
 		log.Printf("UserID %v no auth", string(id))
 		return ""
 	}
+}
+
+func GetUserIDFromMD(ctx context.Context) string {
+	var (
+		userID       string
+		userIDCookie string
+	)
+	userIDName := string(config.UserIDCookieName)
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		values := md.Get(userIDName)
+		if len(values) > 0 {
+			userIDCookie = values[0]
+		}
+	}
+	if userIDCookie != "" {
+		userID = GetUserIDFromCookie(userIDCookie)
+		if userID != "" {
+			return userID
+		}
+	}
+	return ""
 }

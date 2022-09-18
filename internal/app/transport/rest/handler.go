@@ -74,7 +74,7 @@ func (h *Handler) InitRoutes() *chi.Mux {
 	return router
 }
 
-// HandlePost accepts the URL string in the request body and returns its abbreviated version. Content-Type: text/html
+// HandlePost accepts the URL string in the request body and returns its shorten version. Content-Type: text/html
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	urlRead, err := io.ReadAll(r.Body)

@@ -7,9 +7,19 @@ option go_package = "/pb";
 message EmptyRequest {}
 
 message PingResponse {
-  int32 code = 1;
+  int32 status = 1;
+}
+
+message HandlePostRequest {
+  string originURL = 1;
+}
+
+message HandlePostResponse {
+  int32 status = 1;
+  string shortenURL = 2;
 }
 
 service Shortener{
   rpc Ping(EmptyRequest) returns (PingResponse);
+  rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
 }

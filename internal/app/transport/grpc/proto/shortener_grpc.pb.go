@@ -23,6 +23,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ShortenerClient interface {
 	Ping(ctx context.Context, in *EmptyRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	HandlePost(ctx context.Context, in *HandlePostRequest, opts ...grpc.CallOption) (*HandlePostResponse, error)
 }
 
 type shortenerClient struct {
@@ -42,11 +43,21 @@ func (c *shortenerClient) Ping(ctx context.Context, in *EmptyRequest, opts ...gr
 	return out, nil
 }
 
+func (c *shortenerClient) HandlePost(ctx context.Context, in *HandlePostRequest, opts ...grpc.CallOption) (*HandlePostResponse, error) {
+	out := new(HandlePostResponse)
+	err := c.cc.Invoke(ctx, "/shortener.Shortener/HandlePost", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ShortenerServer is the server API for Shortener service.
 // All implementations must embed UnimplementedShortenerServer
 // for forward compatibility
 type ShortenerServer interface {
 	Ping(context.Context, *EmptyRequest) (*PingResponse, error)
+	HandlePost(context.Context, *HandlePostRequest) (*HandlePostResponse, error)
 	mustEmbedUnimplementedShortenerServer()
 }
 
@@ -56,6 +67,9 @@ type UnimplementedShortenerServer struct {
 
 func (UnimplementedShortenerServer) Ping(context.Context, *EmptyRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedShortenerServer) HandlePost(context.Context, *HandlePostRequest) (*HandlePostResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandlePost not implemented")
 }
 func (UnimplementedShortenerServer) mustEmbedUnimplementedShortenerServer() {}
 
@@ -88,6 +102,24 @@ func _Shortener_Ping_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Shortener_HandlePost_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandlePostRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ShortenerServer).HandlePost(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/shortener.Shortener/HandlePost",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ShortenerServer).HandlePost(ctx, req.(*HandlePostRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Shortener_ServiceDesc is the grpc.ServiceDesc for Shortener service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -98,6 +130,10 @@ var Shortener_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _Shortener_Ping_Handler,
+		},
+		{
+			MethodName: "HandlePost",
+			Handler:    _Shortener_HandlePost_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

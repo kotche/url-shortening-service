@@ -1,4 +1,4 @@
-package test
+package rest
 
 import (
 	"bytes"
@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"github.com/kotche/url-shortening-service/internal/app/handler"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 )
@@ -18,7 +17,7 @@ func ExampleHandler_HandlePost() {
 
 	URLStorage := storage.NewUrls()
 	s := service.NewService(URLStorage)
-	h := handler.NewHandler(s, conf)
+	h := NewHandler(s, conf)
 
 	//Input body:
 	//https://www.yandex.ru
@@ -48,7 +47,7 @@ func ExampleHandler_HandlePostJSON() {
 
 	URLStorage := storage.NewUrls()
 	s := service.NewService(URLStorage)
-	h := handler.NewHandler(s, conf)
+	h := NewHandler(s, conf)
 
 	//Input body:
 	//{"url":"www.yandex.ru"}
@@ -79,7 +78,7 @@ func ExampleHandler_HandleGet() {
 
 	URLStorage := storage.NewUrls()
 	s := service.NewService(URLStorage)
-	h := handler.NewHandler(s, conf)
+	h := NewHandler(s, conf)
 
 	//Endpoint:
 	//http://localhost:8080/qwerty

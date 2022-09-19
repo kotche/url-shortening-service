@@ -1,4 +1,4 @@
-package handler
+package rest
 
 import (
 	"context"
@@ -12,9 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/model"
 	"github.com/kotche/url-shortening-service/internal/app/service"
+	middlewares2 "github.com/kotche/url-shortening-service/internal/app/transport/rest/middlewares"
 )
 
 // ICookieManager retrieves the user id from cookies
@@ -29,7 +29,7 @@ type Handler struct {
 	Cm      ICookieManager
 }
 
-// NewHandler constructor gets a handler instance
+// NewHandler constructor gets a transport instance
 func NewHandler(service *service.Service, conf *config.Config) *Handler {
 	handler := &Handler{
 		Service: service,
@@ -44,8 +44,8 @@ func NewHandler(service *service.Service, conf *config.Config) *Handler {
 func (h *Handler) InitRoutes() *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(middleware.Recoverer)
-	router.Use(middlewares.GzipHandler)
-	router.Use(middlewares.UserCookieHandler)
+	router.Use(middlewares2.GzipHandler)
+	router.Use(middlewares2.UserCookieHandler)
 
 	//main routes
 	router.Group(func(router chi.Router) {
@@ -60,7 +60,7 @@ func (h *Handler) InitRoutes() *chi.Mux {
 
 	//trusted network routes
 	router.Group(func(router chi.Router) {
-		trustedNetwork := middlewares.NewTrustedNetwork(h.Conf)
+		trustedNetwork := middlewares2.NewTrustedNetwork(h.Conf)
 		router.Use(trustedNetwork.TrustedNetworkHandler)
 		router.Get("/api/internal/stats", h.HandleGetStats)
 	})
@@ -74,7 +74,7 @@ func (h *Handler) InitRoutes() *chi.Mux {
 	return router
 }
 
-// HandlePost accepts the URL string in the request body and returns its abbreviated version. Content-Type: text/html
+// HandlePost accepts the URL string in the request body and returns its shorten version. Content-Type: text/html
 func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	urlRead, err := io.ReadAll(r.Body)
@@ -89,7 +89,8 @@ func (h *Handler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.Service.GetURLModel(userID, originURL)
+	ctx := context.Background()
+	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
 		e := err.(model.ConflictURLError)
@@ -140,7 +141,8 @@ func (h *Handler) HandlePostJSON(w http.ResponseWriter, r *http.Request) {
 	status := http.StatusCreated
 	var shortenURL string
 
-	urlModel, err := h.Service.GetURLModel(userID, originURL)
+	ctx := context.Background()
+	urlModel, err := h.Service.GetURLModel(ctx, userID, originURL)
 
 	if errors.As(err, &model.ConflictURLError{}) {
 		e := err.(model.ConflictURLError)
@@ -173,7 +175,8 @@ func (h *Handler) HandlePostJSON(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	shortURL := chi.URLParam(r, "id")
 
-	url, err := h.Service.GetURLModelByID(shortURL)
+	ctx := context.Background()
+	url, err := h.Service.GetURLModelByID(ctx, shortURL)
 
 	if errors.As(err, &model.GoneError{}) {
 		w.WriteHeader(http.StatusGone)
@@ -196,7 +199,8 @@ func (h *Handler) HandleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUrls, err := h.Service.GetUserURLs(userID)
+	ctx := context.Background()
+	userUrls, err := h.Service.GetUserURLs(ctx, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -234,7 +238,8 @@ func (h *Handler) HandleGetUserURLs(w http.ResponseWriter, r *http.Request) {
 
 // HandlePing checks the availability of the database
 func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
-	err := h.Service.Ping()
+	ctx := context.Background()
+	err := h.Service.Ping(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -242,7 +247,7 @@ func (h *Handler) HandlePing(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// HandlePostShortenBatch accepts in the request body a set of URLs for abbreviation
+// HandlePostShortenBatch accepts in the request body a set of URLs for shorten
 func (h *Handler) HandlePostShortenBatch(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	body, err := io.ReadAll(r.Body)

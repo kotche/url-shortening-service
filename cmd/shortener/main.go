@@ -12,11 +12,13 @@ import (
 	"time"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"github.com/kotche/url-shortening-service/internal/app/handler"
-	"github.com/kotche/url-shortening-service/internal/app/server"
+	grpcServer "github.com/kotche/url-shortening-service/internal/app/server/grpc"
+	restServer "github.com/kotche/url-shortening-service/internal/app/server/rest"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	"github.com/kotche/url-shortening-service/internal/app/storage"
 	"github.com/kotche/url-shortening-service/internal/app/storage/postgres"
+	"github.com/kotche/url-shortening-service/internal/app/transport/grpc"
+	"github.com/kotche/url-shortening-service/internal/app/transport/rest"
 )
 
 var (
@@ -81,25 +83,36 @@ func main() {
 	ctx, cansel := context.WithCancel(context.Background())
 	defer cansel()
 
-	handlerObj := handler.NewHandler(serviceURL, conf)
-	srv := server.NewServer(conf, handlerObj.Router)
+	handlerRest := rest.NewHandler(serviceURL, conf)
+	restSrv := restServer.NewServer(conf, handlerRest.Router)
+	handlerGrpc := grpc.NewHandler(serviceURL, conf)
+	grpcSrv := grpcServer.NewServer(conf, handlerGrpc)
 
 	//graceful shutdown
 	termChan := make(chan os.Signal, 1)
 	signal.Notify(termChan, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 
 	go func() {
-		<-termChan
-		log.Println("server shutdown")
-		cansel()
-		if err = srv.Stop(ctx); err != nil {
-			log.Fatalf("server shutdown error: %s", err)
+		log.Println("Starting REST server")
+		if err = restSrv.Run(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("REST server run error: %s", err)
+		}
+
+	}()
+	go func() {
+		log.Println("Starting gRPC server")
+		if err = grpcSrv.Run(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("gRCP server run error: %s", err)
 		}
 	}()
 
-	if err = srv.Run(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("server run error: %s", err)
+	<-termChan
+	log.Println("Servers shutdown")
+	cansel()
+	if err = restSrv.Stop(ctx); err != nil {
+		log.Fatalf("REST server shutdown error: %s", err)
 	}
+	grpcSrv.Stop()
 }
 
 // example: go run -ldflags "-X main.buildVersion=v1.0 -X 'main.buildDate=$(date +'%Y/%m/%d %H:%M:%S')'" main.go

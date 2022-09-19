@@ -9,12 +9,12 @@ import (
 	"testing"
 
 	"github.com/kotche/url-shortening-service/internal/app/config"
-	"github.com/kotche/url-shortening-service/internal/app/handler"
-	mockHandler "github.com/kotche/url-shortening-service/internal/app/handler/mock"
-	"github.com/kotche/url-shortening-service/internal/app/middlewares"
 	"github.com/kotche/url-shortening-service/internal/app/service"
 	mockService "github.com/kotche/url-shortening-service/internal/app/service/mock"
 	"github.com/kotche/url-shortening-service/internal/app/storage/test"
+	mockHandler "github.com/kotche/url-shortening-service/internal/app/transport/mock"
+	"github.com/kotche/url-shortening-service/internal/app/transport/rest"
+	"github.com/kotche/url-shortening-service/internal/app/transport/rest/middlewares"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -107,7 +107,7 @@ func TestGzipHandle(t *testing.T) {
 			s := service.NewService(mock)
 			s.Gen = generator
 
-			h := handler.NewHandler(s, conf)
+			h := rest.NewHandler(s, conf)
 			h.Cm = cm
 
 			data := []byte(`{"url":"https://www.google.com"}`)

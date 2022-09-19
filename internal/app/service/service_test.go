@@ -25,8 +25,10 @@ func BenchmarkGetURLModel(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 
+	ctx := context.Background()
+
 	for i := 0; i < b.N; i++ {
-		url, _ := s.GetURLModel(urls[i].Short, urls[i].Origin)
+		url, _ := s.GetURLModel(ctx, urls[i].Short, urls[i].Origin)
 		_ = url
 	}
 }

@@ -36,17 +36,17 @@ func (m *MockStorage) EXPECT() *MockStorageMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockStorage) Add(userID string, url *model.URL) error {
+func (m *MockStorage) Add(ctx context.Context, userID string, url *model.URL) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", userID, url)
+	ret := m.ctrl.Call(m, "Add", ctx, userID, url)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockStorageMockRecorder) Add(userID, url interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) Add(ctx, userID, url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockStorage)(nil).Add), userID, url)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockStorage)(nil).Add), ctx, userID, url)
 }
 
 // Close mocks base method.
@@ -64,33 +64,33 @@ func (mr *MockStorageMockRecorder) Close() *gomock.Call {
 }
 
 // GetByID mocks base method.
-func (m *MockStorage) GetByID(id string) (*model.URL, error) {
+func (m *MockStorage) GetByID(ctx context.Context, id string) (*model.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", id)
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
 	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
-func (mr *MockStorageMockRecorder) GetByID(id interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockStorage)(nil).GetByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockStorage)(nil).GetByID), ctx, id)
 }
 
 // GetUserURLs mocks base method.
-func (m *MockStorage) GetUserURLs(userID string) ([]*model.URL, error) {
+func (m *MockStorage) GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserURLs", userID)
+	ret := m.ctrl.Call(m, "GetUserURLs", ctx, userID)
 	ret0, _ := ret[0].([]*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserURLs indicates an expected call of GetUserURLs.
-func (mr *MockStorageMockRecorder) GetUserURLs(userID interface{}) *gomock.Call {
+func (mr *MockStorageMockRecorder) GetUserURLs(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockStorage)(nil).GetUserURLs), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockStorage)(nil).GetUserURLs), ctx, userID)
 }
 
 // MockDatabase is a mock of Database interface.
@@ -117,17 +117,17 @@ func (m *MockDatabase) EXPECT() *MockDatabaseMockRecorder {
 }
 
 // Add mocks base method.
-func (m *MockDatabase) Add(userID string, url *model.URL) error {
+func (m *MockDatabase) Add(ctx context.Context, userID string, url *model.URL) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Add", userID, url)
+	ret := m.ctrl.Call(m, "Add", ctx, userID, url)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Add indicates an expected call of Add.
-func (mr *MockDatabaseMockRecorder) Add(userID, url interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) Add(ctx, userID, url interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDatabase)(nil).Add), userID, url)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Add", reflect.TypeOf((*MockDatabase)(nil).Add), ctx, userID, url)
 }
 
 // Close mocks base method.
@@ -159,18 +159,18 @@ func (mr *MockDatabaseMockRecorder) DeleteBatch(ctx, toDelete interface{}) *gomo
 }
 
 // GetByID mocks base method.
-func (m *MockDatabase) GetByID(id string) (*model.URL, error) {
+func (m *MockDatabase) GetByID(ctx context.Context, id string) (*model.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetByID", id)
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
 	ret0, _ := ret[0].(*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetByID indicates an expected call of GetByID.
-func (mr *MockDatabaseMockRecorder) GetByID(id interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetByID(ctx, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDatabase)(nil).GetByID), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockDatabase)(nil).GetByID), ctx, id)
 }
 
 // GetNumberOfURLs mocks base method.
@@ -204,32 +204,32 @@ func (mr *MockDatabaseMockRecorder) GetNumberOfUsers(ctx interface{}) *gomock.Ca
 }
 
 // GetUserURLs mocks base method.
-func (m *MockDatabase) GetUserURLs(userID string) ([]*model.URL, error) {
+func (m *MockDatabase) GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUserURLs", userID)
+	ret := m.ctrl.Call(m, "GetUserURLs", ctx, userID)
 	ret0, _ := ret[0].([]*model.URL)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUserURLs indicates an expected call of GetUserURLs.
-func (mr *MockDatabaseMockRecorder) GetUserURLs(userID interface{}) *gomock.Call {
+func (mr *MockDatabaseMockRecorder) GetUserURLs(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockDatabase)(nil).GetUserURLs), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUserURLs", reflect.TypeOf((*MockDatabase)(nil).GetUserURLs), ctx, userID)
 }
 
 // Ping mocks base method.
-func (m *MockDatabase) Ping() error {
+func (m *MockDatabase) Ping(ctx context.Context) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Ping")
+	ret := m.ctrl.Call(m, "Ping", ctx)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Ping indicates an expected call of Ping.
-func (mr *MockDatabaseMockRecorder) Ping() *gomock.Call {
+func (mr *MockDatabaseMockRecorder) Ping(ctx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabase)(nil).Ping))
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Ping", reflect.TypeOf((*MockDatabase)(nil).Ping), ctx)
 }
 
 // WriteBatch mocks base method.

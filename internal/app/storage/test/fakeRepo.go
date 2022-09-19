@@ -10,16 +10,16 @@ type FakeRepo struct {
 	Short string
 }
 
-func (f *FakeRepo) Add(userID string, url *model.URL) error {
+func (f *FakeRepo) Add(ctx context.Context, userID string, url *model.URL) error {
 	url.Short = f.Short
 	return nil
 }
 
-func (f *FakeRepo) GetByID(id string) (*model.URL, error) {
+func (f *FakeRepo) GetByID(ctx context.Context, id string) (*model.URL, error) {
 	return nil, nil
 }
 
-func (f *FakeRepo) GetUserURLs(userID string) ([]*model.URL, error) {
+func (f *FakeRepo) GetUserURLs(ctx context.Context, userID string) ([]*model.URL, error) {
 	return nil, nil
 }
 
@@ -27,7 +27,7 @@ func (f *FakeRepo) Close() error {
 	return nil
 }
 
-func (f *FakeRepo) Ping() error {
+func (f *FakeRepo) Ping(ctx context.Context) error {
 	return nil
 }
 

@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "/pb";
+
+message PingRequest {}
+
+message PingResponse {
+  int32 status = 1;
+}
+
+message HandlePostRequest {
+  string originURL = 1;
+}
+
+message HandlePostResponse {
+  int32 status = 1;
+  string shortenURL = 2;
+}
+
+message HandleGetRequest {
+  string shortURL = 1;
+}
+
+message HandleGetResponse {
+  int32 status = 1;
+  string originURL = 2;
+}
+
+message SetURLsResponse {
+  string shortURL = 1;
+  string originURL = 2;
+}
+
+message HandleGetUserURLsRequest{}
+
+message HandleGetUserURLsResponse {
+  repeated SetURLsResponse setURLs = 1;
+}
+
+message CorrelationURLRequest {
+  string id = 1;
+  string originalURL = 2;
+}
+
+message CorrelationURLResponse {
+  string id = 1;
+  string shortURL = 2;
+}
+
+message HandlePostShortenBatchRequest {
+  repeated CorrelationURLRequest correlationURL = 1;
+}
+
+message HandlePostShortenBatchResponse {
+  int32 status = 1;
+  repeated CorrelationURLResponse correlationURL = 2;
+}
+
+message HandleDeleteURLsRequest {
+  repeated string deleteURLs = 1;
+}
+
+message HandleDeleteURLsResponse {
+  int32 status = 1;
+}
+
+message HandleGetStatsRequest{}
+
+message HandleGetStatsResponse {
+  int64 urls = 1;
+  int64 users = 2;
+}
+
+service Shortener {
+  rpc Ping(PingRequest) returns (PingResponse);
+  rpc HandlePost(HandlePostRequest) returns (HandlePostResponse);
+  rpc HandleGet(HandleGetRequest) returns (HandleGetResponse);
+  rpc HandleGetUserURLs(HandleGetUserURLsRequest) returns (HandleGetUserURLsResponse);
+  rpc HandlePostShortenBatch(HandlePostShortenBatchRequest) returns (HandlePostShortenBatchResponse);
+  rpc HandleDeleteURLs(HandleDeleteURLsRequest) returns (HandleDeleteURLsResponse);
+  rpc HandleGetStats(HandleGetStatsRequest) returns (HandleGetStatsResponse);
+}

@@ -1,3 +1,5 @@
+![image](https://pictures.s3.yandex.net/resources/nice_to_have_8_1645434617.png)
+
 # Инкремент 1
 Напишите сервис для сокращения длинных URL.  
 Требования:
